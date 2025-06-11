@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Family Financial Tracker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+        }
+        .btn-primary {
+            @apply bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition duration-200;
+        }
+        .btn-secondary {
+            @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition duration-200;
+        }
+        /* Message box styling */
+        #messageBox {
+            top: 1rem;
+            right: 1rem;
+            max-width: 90%;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+        #messageBox.hidden {
+            opacity: 0;
+            transform: translateY(-100%);
+        }
+        #messageBox.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loadingIndicator" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500"></div>
+        <p class="ml-4 text-white text-lg">Loading...</p>
+    </div>
+
+    <div id="messageBox" class="hidden fixed bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+        <p id="messageText"></p>
+    </div>
+
+    <!-- Registration Form -->
+    <div id="registrationSection" class="w-full max-w-md card p-8">
+        <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Register for Family Financial Tracker</h2>
+        <p class="text-lg text-center text-gray-600 mb-6">Create your family account</p>
+        <form id="registrationForm" class="space-y-4">
+            <div>
+                <label for="username" class="block text-sm font-medium text-gray-700">Username:</label>
+                <input type="text" id="username" name="username" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+            </div>
+            <div>
+                <label for="familyMemberName" class="block text-sm font-medium text-gray-700">Your Name (e.g., "Dad", "Sarah"):</label>
+                <input type="text" id="familyMemberName" name="family_member_name" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+            </div>
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700">Email (Optional):</label>
+                <input type="email" id="email" name="email" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700">Password:</label>
+                <input type="password" id="password" name="password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+            </div>
+            <div>
+                <label for="password2" class="block text-sm font-medium text-gray-700">Confirm Password:</label>
+                <input type="password" id="password2" name="password2" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+            </div>
+            <button type="submit" class="w-full btn-primary">Register</button>
+            <p class="text-sm text-gray-600 text-center mt-4">
+                Already have an account? <a href="login" class="text-indigo-600 hover:underline">Login here</a>
+            </p>
+        </form>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000/finance_tracker/';
+
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const registrationForm = document.getElementById('registrationForm');
+
+        function showLoading() {
+            loadingIndicator.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingIndicator.classList.add('hidden');
+        }
+
+        function showMessage(message, type = 'info') {
+            messageText.textContent = message;
+            messageBox.classList.remove('bg-blue-500', 'bg-green-500', 'bg-red-500');
+            messageBox.classList.remove('hidden', 'show');
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-500');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-500');
+            } else {
+                messageBox.classList.add('bg-blue-500');
+            }
+            messageBox.classList.add('show');
+
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+                messageBox.classList.add('hidden');
+            }, 3000);
+        }
+
+        registrationForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            showLoading();
+
+            const username = event.target.username.value;
+            const familyMemberName = event.target.familyMemberName.value;
+            const email = event.target.email.value;
+            const password = event.target.password.value;
+            const password2 = event.target.password2.value;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}register/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username,
+                        family_member_name: familyMemberName,
+                        email,
+                        password,
+                        password2
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showMessage(`Registration successful for ${data.username}! You can now log in.`, 'success');
+                    registrationForm.reset();
+                    // Redirect to login page after successful registration
+                    setTimeout(() => {
+                        window.location.href = 'login.html'; // Adjust this path
+                    }, 1500);
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    // Attempt to parse validation errors more clearly
+                    let errorMessage = 'Registration failed. ';
+                    if (errorData.username) errorMessage += `Username: ${errorData.username.join(', ')} `;
+                    if (errorData.password) errorMessage += `Password: ${errorData.password.join(', ')} `;
+                    if (errorData.password2) errorMessage += `Confirm Password: ${errorData.password2.join(', ')} `;
+                    if (errorData.family_member_name) errorMessage += `Your Name: ${errorData.family_member_name.join(', ')} `;
+                    if (errorData.detail) errorMessage += errorData.detail;
+                    if (Object.keys(errorData).length === 0) errorMessage += 'Unknown error.';
+
+
+                    showMessage(errorMessage, 'error');
+                }
+            } catch (error) {
+                showMessage(`Network or API error: ${error.message}`, 'error');
+                console.error("Registration fetch error:", error);
+            } finally {
+                hideLoading();
+            }
+        });
+    </script>
+</body>
+</html>

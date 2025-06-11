@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Family Financial Tracker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+        }
+        .btn-primary {
+            @apply bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition duration-200;
+        }
+        /* Message box styling */
+        #messageBox {
+            top: 1rem;
+            right: 1rem;
+            max-width: 90%;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+        #messageBox.hidden {
+            opacity: 0;
+            transform: translateY(-100%);
+        }
+        #messageBox.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loadingIndicator" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500"></div>
+        <p class="ml-4 text-white text-lg">Loading...</p>
+    </div>
+
+    <div id="messageBox" class="hidden fixed bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+        <p id="messageText"></p>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginSection" class="w-full max-w-md card p-8">
+        <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Family Financial Tracker</h2>
+        <p class="text-lg text-center text-gray-600 mb-6">Login to your dashboard</p>
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label for="username" class="block text-sm font-medium text-gray-700">Username:</label>
+                <input type="text" id="username" name="username" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700">Password:</label>
+                <input type="password" id="password" name="password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+            </div>
+            <button type="submit" class="w-full btn-primary">Login</button>
+            <p class="text-sm text-gray-600 text-center mt-4">
+                Hint: Use a user linked to a FamilyMember in your Django admin.
+                <br>
+                New user? <a href="register.html" class="text-indigo-600 hover:underline">Register here</a>
+            </p>
+        </form>
+    </div>
+
+    <script>
+        // Configuration and Global Variables
+        const API_BASE_URL = 'http://127.0.0.1:8000/api/'; // Your Django API base URL
+
+        // DOM Elements
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const loginForm = document.getElementById('loginForm');
+
+        // --- Utility Functions ---
+
+        function showLoading() {
+            loadingIndicator.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingIndicator.classList.add('hidden');
+        }
+
+        function showMessage(message, type = 'info') {
+            messageText.textContent = message;
+            messageBox.classList.remove('bg-blue-500', 'bg-green-500', 'bg-red-500');
+            messageBox.classList.remove('hidden', 'show'); // Reset visibility classes
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-500');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-500');
+            } else {
+                messageBox.classList.add('bg-blue-500');
+            }
+            messageBox.classList.add('show'); // Show with transition
+
+            setTimeout(() => {
+                messageBox.classList.remove('show'); // Start hide transition
+                messageBox.classList.add('hidden'); // Fully hide after transition
+            }, 3000);
+        }
+
+        // Function to get CSRF token from cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // --- Event Handlers ---
+
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            showLoading();
+
+            const username = event.target.username.value;
+            const password = event.target.password.value;
+            const csrftoken = getCookie('csrftoken'); // Get CSRF token
+
+            try {
+                const response = await fetch(`${API_BASE_URL}auth/token/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken, // Include CSRF token here
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const authToken = data.token;
+                    localStorage.setItem('authToken', authToken); // Store token
+                    showMessage("Login successful! Redirecting...", 'success');
+                    // Redirect to the dashboard page
+                    window.location.href = 'dashboard.html'; // Adjust 'dashboard' to your actual dashboard URL
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.detail || errorData.non_field_errors || JSON.stringify(errorData) || 'Login failed.';
+                    showMessage(`Login failed: ${errorMessage}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Network or API error: ${error.message}`, 'error');
+                console.error("Login fetch error:", error);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Check if already logged in (e.g., from a previous session)
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('authToken')) {
+                showMessage("Already logged in. Redirecting to dashboard...", 'info');
+                window.location.href = 'dashboard.html'; // Adjust this path
+            }
+        });
+
+    </script>
+</body>
+</html>

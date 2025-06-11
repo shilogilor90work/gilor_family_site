@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Financial Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e2e8f0; /* bg-slate-200, a softer light gray */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 0; /* Consistent padding top/bottom */
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0 1rem; /* Horizontal padding for responsiveness */
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem; /* rounded-xl, slightly larger */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+            border: 1px solid #e2e8f0; /* subtle border */
+        }
+        .btn-primary {
+            @apply bg-indigo-600 text-white px-6 py-3 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition duration-300 ease-in-out font-semibold text-lg;
+        }
+        .btn-secondary {
+            @apply bg-gray-200 text-gray-800 px-6 py-3 rounded-xl hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition duration-300 ease-in-out font-semibold text-lg;
+        }
+        /* Message box styling */
+        #messageBox {
+            top: 1rem;
+            right: 1rem;
+            max-width: 90%;
+            min-width: 250px;
+            text-align: center;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+            border-radius: 0.75rem; /* rounded-lg */
+        }
+        #messageBox.hidden {
+            opacity: 0;
+            transform: translateY(-100%);
+        }
+        #messageBox.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        /* Custom scrollbar for transaction history */
+        .overflow-y-auto::-webkit-scrollbar {
+            width: 8px;
+            height: 8px; /* For horizontal scrollbar if needed */
+        }
+        .overflow-y-auto::-webkit-scrollbar-track {
+            background: #f8fafc; /* slate-50 */
+            border-radius: 10px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* slate-400 */
+            border-radius: 10px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* slate-600 */
+        }
+        /* Table styles */
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 0.75rem; /* rounded-lg */
+            overflow: hidden; /* Ensures rounded corners apply to content */
+        }
+        thead th:first-child { border-top-left-radius: 0.75rem; }
+        thead th:last-child { border-top-right-radius: 0.75rem; }
+        tbody tr:last-child td:first-child { border-bottom-left-radius: 0.75rem; }
+        tbody tr:last-child td:last-child { border-bottom-right-radius: 0.75rem; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-8">
+
+    <div id="loadingIndicator" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500"></div>
+        <p class="ml-4 text-white text-lg font-medium">Loading data...</p>
+    </div>
+
+    <div id="messageBox" class="hidden fixed bg-blue-500 text-white px-6 py-3 shadow-lg z-50 show">
+        <p id="messageText"></p>
+    </div>
+
+    <!-- Main Dashboard Section -->
+    <div id="dashboardSection" class="w-full container px-4 sm:px-6 lg:px-8">
+        <header class="flex flex-col md:flex-row items-center justify-between py-6 px-8 mb-8 card">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4 md:mb-0">
+                Welcome, <span id="userNameDisplay" class="text-indigo-600"></span>!
+            </h1>
+            <div class="text-2xl sm:text-3xl font-bold text-gray-700 flex items-center space-x-2">
+                <span>Total Balance:</span>
+                <span id="totalBalanceDisplay" class="text-green-600 font-extrabold text-4xl">--.--</span>
+            </div>
+            <button id="logoutButton" class="btn-secondary mt-6 md:mt-0">Logout</button>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Accounts Card -->
+            <section class="lg:col-span-1 card p-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-3 border-gray-200">Your Accounts</h2>
+                <div id="accountsList" class="space-y-4">
+                    <p class="text-gray-500 text-center py-4">Loading accounts...</p>
+                </div>
+            </section>
+
+            <!-- Add Transaction Card -->
+            <section class="lg:col-span-2 card p-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-3 border-gray-200">Add New Transaction</h2>
+                <form id="transactionForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="transactionAccount" class="block text-sm font-medium text-gray-700 mb-1">Account:</label>
+                        <select id="transactionAccount" name="account" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-base" required>
+                            <option value="">Select an account</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="transactionType" class="block text-sm font-medium text-gray-700 mb-1">Type:</label>
+                        <select id="transactionType" name="type" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-base" required>
+                            <option value="debit">Expense</option>
+                            <option value="credit">Income</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="transactionCategory" class="block text-sm font-medium text-gray-700 mb-1">Category:</label>
+                        <select id="transactionCategory" name="category" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-base" required>
+                            <option value="">Select a category</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="transactionAmount" class="block text-sm font-medium text-gray-700 mb-1">Amount:</label>
+                        <input type="number" id="transactionAmount" name="amount" step="0.01" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-base" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="transactionDescription" class="block text-sm font-medium text-gray-700 mb-1">Description:</label>
+                        <input type="text" id="transactionDescription" name="description" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-base" placeholder="e.g., Bought lunch, Weekly allowance">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="transactionDate" class="block text-sm font-medium text-gray-700 mb-1">Date:</label>
+                        <input type="date" id="transactionDate" name="date" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-base" required>
+                    </div>
+                    <div class="md:col-span-2 flex justify-end mt-4">
+                        <button type="submit" class="btn-primary">Add Transaction</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Transaction History Card -->
+            <section class="lg:col-span-3 card p-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-3 border-gray-200">Transaction History</h2>
+                <div class="flex flex-col sm:flex-row gap-4 mb-6 items-center">
+                    <input type="date" id="historyStartDate" class="flex-1 mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-base" placeholder="Start Date">
+                    <input type="date" id="historyEndDate" class="flex-1 mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-base" placeholder="End Date">
+                    <select id="historyCategoryFilter" class="flex-1 mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-base">
+                        <option value="">All Categories</option>
+                    </select>
+                    <select id="historyTypeFilter" class="flex-1 mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-base">
+                        <option value="">All Types</option>
+                        <option value="credit">Income</option>
+                        <option value="debit">Expense</option>
+                    </select>
+                    <button id="applyFiltersBtn" class="btn-secondary w-full sm:w-auto mt-4 sm:mt-0">Apply Filters</button>
+                </div>
+                <div class="overflow-x-auto overflow-y-auto max-h-96 rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Account</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionHistoryBody" class="bg-white divide-y divide-gray-100">
+                            <tr><td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-gray-500 text-base">No transactions to display.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Spending Trends Chart -->
+            <section class="lg:col-span-3 card p-8 mt-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-3 border-gray-200">Monthly Spending Trends</h2>
+                <div class="relative h-80 sm:h-96">
+                    <canvas id="spendingChart"></canvas>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Configuration and Global Variables
+        const API_BASE_URL = 'http://127.0.0.1:8000/finance_tracker/'; // Your Django API base URL
+        let authToken = localStorage.getItem('authToken'); // Store token in localStorage
+        let currentUserId = null; // Django User ID
+        let currentMemberId = null; // FamilyMember ID
+        let accounts = []; // To store user's accounts
+        let categories = []; // To store transaction categories
+        let transactionChart; // Chart.js instance
+
+        // DOM Elements
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+
+        const dashboardSection = document.getElementById('dashboardSection');
+        const logoutButton = document.getElementById('logoutButton');
+
+        const userNameDisplay = document.getElementById('userNameDisplay');
+        const totalBalanceDisplay = document.getElementById('totalBalanceDisplay');
+        const accountsList = document.getElementById('accountsList');
+        const transactionForm = document.getElementById('transactionForm');
+        const transactionAccountSelect = document.getElementById('transactionAccount');
+        const transactionCategorySelect = document.getElementById('transactionCategory');
+        const transactionHistoryBody = document.getElementById('transactionHistoryBody');
+
+        const historyStartDate = document.getElementById('historyStartDate');
+        const historyEndDate = document.getElementById('historyEndDate');
+        const historyCategoryFilter = document.getElementById('historyCategoryFilter');
+        const historyTypeFilter = document.getElementById('historyTypeFilter');
+        const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+
+        const spendingChartCanvas = document.getElementById('spendingChart');
+
+        // --- Utility Functions ---
+
+        function showLoading() {
+            loadingIndicator.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingIndicator.classList.add('hidden');
+        }
+
+        function showMessage(message, type = 'info') {
+            messageText.textContent = message;
+            messageBox.classList.remove('bg-blue-500', 'bg-green-500', 'bg-red-500');
+            messageBox.classList.remove('hidden'); // Ensure it's not hidden
+            messageBox.classList.add('show'); // Apply show class for transition
+
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-500');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-500');
+            } else {
+                messageBox.classList.add('bg-blue-500');
+            }
+
+            setTimeout(() => {
+                messageBox.classList.remove('show'); // Start hide transition
+                messageBox.classList.add('hidden'); // Fully hide after transition completes
+            }, 3000);
+        }
+
+
+        async function authenticatedFetch(url, options = {}) {
+            if (!authToken) {
+                // If no token, redirect to login page
+                showMessage("Authentication required. Redirecting to login...", 'error');
+                window.location.href = 'login.html'; // Adjust this path if your login page URL is different
+                return null;
+            }
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${authToken}`, // Assuming Token authentication
+                ...options.headers
+            };
+
+            showLoading();
+            try {
+                const response = await fetch(url, { ...options, headers });
+                hideLoading();
+
+                if (response.status === 401) { // Unauthorized
+                    showMessage("Session expired or invalid. Please log in again.", 'error');
+                    logoutUser(); // Force logout if token is invalid
+                    return null;
+                }
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.detail || errorData.non_field_errors || JSON.stringify(errorData) || `HTTP error! status: ${response.status}`;
+                    showMessage(`Error: ${errorMessage}`, 'error');
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                hideLoading();
+                showMessage(`Network or API error: ${error.message}`, 'error');
+                console.error("Fetch error:", error);
+                return null;
+            }
+        }
+
+        function logoutUser() {
+            authToken = null;
+            currentUserId = null;
+            currentMemberId = null;
+            localStorage.removeItem('authToken');
+            // Redirect to the login page after logout
+            window.location.href = 'login.html'; // Adjust this path
+        }
+
+        // --- Data Fetching Functions ---
+
+        async function fetchUserData() {
+            // Directly fetch the current user's FamilyMember profile
+            // This endpoint returns {id, name, user: {id, username, email}}
+            const myMemberData = await authenticatedFetch(`${API_BASE_URL}me/`);
+            if (myMemberData) {
+                currentUserId = myMemberData.user.id;
+                currentMemberId = myMemberData.id;
+                // Use the user's username for display
+                userNameDisplay.textContent = myMemberData.user.username; // Changed this line
+                return true;
+            } else {
+                showMessage("No FamilyMember profile found for your user. Please register or contact admin.", 'error');
+                logoutUser();
+                return false;
+            }
+        }
+
+
+        async function fetchAllDashboardData() {
+            if (!currentMemberId) {
+                showMessage("User not identified for dashboard data.", 'error');
+                return;
+            }
+
+            // Fetch total balance - still requires currentMemberId
+            const balanceData = await authenticatedFetch(`${API_BASE_URL}reports/balance_by_kid/${currentMemberId}/`);
+            if (balanceData) {
+                totalBalanceDisplay.textContent = `${balanceData.total_balance.toFixed(2)} ${balanceData.currency}`;
+                totalBalanceDisplay.classList.remove('text-green-600', 'text-red-600');
+                if (balanceData.total_balance >= 0) {
+                    totalBalanceDisplay.classList.add('text-green-600');
+                } else {
+                    totalBalanceDisplay.classList.add('text-red-600');
+                }
+            }
+
+            // Fetch accounts - still filtered by member_id on backend
+            const accountData = await authenticatedFetch(`${API_BASE_URL}accounts/`);
+            if (accountData) {
+                accounts = accountData;
+                renderAccounts();
+                populateTransactionAccountSelect();
+            }
+
+            // Fetch categories
+            const categoryData = await authenticatedFetch(`${API_BASE_URL}categories/`);
+            if (categoryData) {
+                categories = categoryData;
+                populateTransactionCategorySelect();
+                populateHistoryCategoryFilter();
+            }
+
+            // Fetch transaction history - still requires currentMemberId
+            await fetchAndRenderTransactionHistory();
+        }
+
+        async function fetchAndRenderTransactionHistory() {
+            if (!currentMemberId) return;
+
+            const params = new URLSearchParams();
+            if (historyStartDate.value) params.append('start_date', historyStartDate.value);
+            if (historyEndDate.value) params.append('end_date', historyEndDate.value);
+            if (historyCategoryFilter.value) params.append('category', historyCategoryFilter.value);
+            if (historyTypeFilter.value) params.append('type', historyTypeFilter.value);
+
+            const historyData = await authenticatedFetch(`${API_BASE_URL}reports/transaction_history/${currentMemberId}/?${params.toString()}`);
+            if (historyData) {
+                renderTransactionHistory(historyData);
+                createSpendingChart(historyData);
+            }
+        }
+
+
+        // --- Rendering Functions ---
+
+        function renderAccounts() {
+            accountsList.innerHTML = ''; // Clear previous accounts
+            if (accounts.length === 0) {
+                accountsList.innerHTML = '<p class="text-gray-500 text-center py-4">No accounts found. Please add an account in Django admin, or if you\'re an an admin, create one here later.</p>';
+                return;
+            }
+            accounts.forEach(account => {
+                const accountDiv = document.createElement('div');
+                accountDiv.className = 'flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-100 transition duration-200 hover:bg-gray-100';
+                accountDiv.innerHTML = `
+                    <span class="font-medium text-gray-800 text-lg">${account.account_name}</span>
+                    <span class="font-bold text-xl ${account.balance_current >= 0 ? 'text-green-600' : 'text-red-600'}">
+                        ${account.balance_current.toFixed(2)} ${account.currency}
+                    </span>
+                `;
+                accountsList.appendChild(accountDiv);
+            });
+        }
+
+        function populateTransactionAccountSelect() {
+            transactionAccountSelect.innerHTML = '<option value="">Select an account</option>';
+            accounts.forEach(account => {
+                const option = document.createElement('option');
+                option.value = account.id;
+                option.textContent = `${account.account_name} (${account.currency})`;
+                transactionAccountSelect.appendChild(option);
+            });
+        }
+
+        function populateTransactionCategorySelect() {
+            transactionCategorySelect.innerHTML = '<option value="">Select a category</option>';
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = `${category.name} (${category.type})`;
+                transactionCategorySelect.appendChild(option);
+            });
+        }
+
+        function populateHistoryCategoryFilter() {
+            historyCategoryFilter.innerHTML = '<option value="">All Categories</option>';
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = `${category.name}`;
+                historyCategoryFilter.appendChild(option);
+            });
+        }
+
+        function renderTransactionHistory(transactions) {
+            transactionHistoryBody.innerHTML = ''; // Clear previous entries
+            if (transactions.length === 0) {
+                transactionHistoryBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-gray-500 text-base">No transactions to display.</td></tr>';
+                return;
+            }
+
+            transactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                const amountClass = transaction.type === 'credit' ? 'text-green-600' : 'text-red-600';
+                const sign = transaction.type === 'credit' ? '+' : '-';
+
+                row.className = 'hover:bg-gray-50'; // Hover effect for table rows
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${transaction.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">${transaction.account_name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${transaction.category_name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${transaction.description || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-base font-bold ${amountClass}">${sign}${parseFloat(transaction.amount).toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 capitalize">${transaction.type}</td>
+                `;
+                transactionHistoryBody.appendChild(row);
+            });
+        }
+
+        function createSpendingChart(transactions) {
+            if (transactionChart) {
+                transactionChart.destroy(); // Destroy existing chart if it exists
+            }
+
+            // Filter for 'debit' transactions (expenses)
+            const expenseTransactions = transactions.filter(t => t.type === 'debit');
+
+            // Aggregate expenses by month
+            const monthlyExpenses = {};
+            expenseTransactions.forEach(transaction => {
+                const date = new Date(transaction.date);
+                const monthYear = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+                monthlyExpenses[monthYear] = (monthlyExpenses[monthYear] || 0) + parseFloat(transaction.amount);
+            });
+
+            // Sort months for consistent chart display
+            const sortedMonths = Object.keys(monthlyExpenses).sort();
+
+            const chartLabels = sortedMonths.map(month => {
+                const [year, monthNum] = month.split('-');
+                const monthName = new Date(year, parseInt(monthNum) - 1, 1).toLocaleString('default', { month: 'short' });
+                return `${monthName} '${year.substring(2)}`; // e.g., "Jun '25"
+            });
+            const chartData = sortedMonths.map(month => monthlyExpenses[month]);
+
+            transactionChart = new Chart(spendingChartCanvas, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Monthly Spending',
+                        data: chartData,
+                        backgroundColor: 'rgba(99, 102, 241, 0.7)', /* Indigo-500 with more opacity */
+                        borderColor: 'rgba(99, 102, 241, 1)',
+                        borderWidth: 1,
+                        borderRadius: 6, /* Slightly rounded bars */
+                        hoverBackgroundColor: 'rgba(79, 70, 229, 0.8)', /* Indigo-600 on hover */
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Monthly Spending Overview',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            },
+                            color: '#374151' /* gray-700 */
+                        },
+                        tooltip: {
+                            backgroundColor: '#374151', /* Darker tooltip background */
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 14 },
+                            padding: 10,
+                            boxPadding: 4,
+                            borderRadius: 6
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Amount ($)',
+                                font: { weight: 'bold', size: 14 },
+                                color: '#4b5563'
+                            },
+                            grid: {
+                                color: '#e5e7eb', /* gray-200 */
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month',
+                                font: { weight: 'bold', size: 14 },
+                                color: '#4b5563'
+                            },
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                font: { size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+        // --- Event Handlers ---
+
+        logoutButton.addEventListener('click', () => {
+            logoutUser();
+        });
+
+        transactionForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const formData = {
+                account: parseInt(event.target.transactionAccount.value),
+                type: event.target.transactionType.value,
+                category: parseInt(event.target.transactionCategory.value),
+                amount: parseFloat(event.target.transactionAmount.value),
+                description: event.target.transactionDescription.value || null,
+                date: event.target.transactionDate.value
+            };
+
+            // Get CSRF token for POST request if using session auth (though for token auth, it's often not strictly needed on data endpoints, good practice for safety if mixed)
+            // If you encounter 403 on this form, you'll need to add CSRF token logic here as well.
+            // const csrftoken = getCookie('csrftoken'); // You would need this if using session auth on this page too.
+
+            const response = await authenticatedFetch(`${API_BASE_URL}transactions/`, {
+                method: 'POST',
+                body: JSON.stringify(formData),
+                // headers: { 'X-CSRFToken': csrftoken } // Uncomment if 403 occurs on transaction submission
+            });
+
+            if (response) {
+                showMessage("Transaction added successfully!", 'success');
+                transactionForm.reset(); // Clear the form
+                document.getElementById('transactionDate').valueAsDate = new Date(); // Reset date to today
+                await fetchAllDashboardData(); // Refetch all dashboard data to update balances and history
+            }
+        });
+
+        applyFiltersBtn.addEventListener('click', async () => {
+            await fetchAndRenderTransactionHistory();
+        });
+
+
+        // --- Initialization ---
+
+        async function initializeDashboard() {
+            if (!authToken) {
+                // If no token, redirect to login page immediately
+                window.location.href = 'login.html'; // Adjust this path to your login page
+                return;
+            }
+
+            // Call fetchUserData first to get currentMemberId
+            const userIdentified = await fetchUserData();
+            if (userIdentified) {
+                // Only proceed with dashboard data fetching if user is identified and linked
+                await fetchAllDashboardData();
+            } else {
+                // fetchUserData handles error messages and redirects to login if no FamilyMember
+                // This 'else' block might not be strictly necessary if fetchUserData does its job well
+                console.log("Initialization halted: User not identified or linked to FamilyMember.");
+            }
+        }
+
+        // Set today's date as default for transaction date input
+        document.getElementById('transactionDate').valueAsDate = new Date();
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeDashboard);
+
+    </script>
+</body>
+</html>

@@ -16,8 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework.authtoken import views as auth_token_views # Import the token views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
+    path('api-auth/', include('rest_framework.urls')),
+    path('finance_tracker/', include('finance_tracker.urls')),
+    path('api/auth/token/', auth_token_views.obtain_auth_token), # Add this line for token login
 ]
