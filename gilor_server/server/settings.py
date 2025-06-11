@@ -32,7 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'core',
+    'amitai',
     'finance_tracker',
     'rest_framework.authtoken',
     'rest_framework',
