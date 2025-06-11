@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        body {
+            display: flex; /* Changed to flex to easily arrange game and leaderboard */
+            justify-content: center;
+            align-items: flex-start; /* Align items at the top to give space for leaderboard */
+            min-height: 100vh;
+            background-color: #333;
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            color: white;
+            gap: 40px; /* Space between game and leaderboard */
+            padding-top: 20px; /* Add some top padding */
+        }
+        canvas {
+            background-color: #000;
+            border: 2px solid #fff;
+            display: block;
+        }
+        #score, #foodEaten {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+        #instructions {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        .game-container {
+            text-align: center;
+        }
+        /* New styles for leaderboard */
+        .leaderboard-container {
+            background-color: #222;
+            border: 1px solid #555;
+            padding: 20px;
+            border-radius: 8px;
+            width: 250px; /* Adjust width as needed */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .leaderboard-container h2 {
+            text-align: center;
+            color: #0f0; /* Green for title */
+            margin-bottom: 15px;
+        }
+        .leaderboard-container ol {
+            list-style: none; /* Remove default numbering */
+            padding: 0;
+        }
+        .leaderboard-container li {
+            background-color: #444;
+            margin-bottom: 8px;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.1em;
+        }
+        .leaderboard-container li span:first-child {
+            font-weight: bold;
+            color: #fff;
+        }
+        .leaderboard-container li span:last-child {
+            color: #0f0; /* Green for score */
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div id="score">Score: 0</div>
+        <div id="foodEaten">Food Eaten: 0</div>
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div id="instructions">Use arrow keys to move. Press 'R' to restart.</div>
+    </div>
+
+    <div class="leaderboard-container">
+        <h2>Top 10 High Scores</h2>
+        <ol>
+            {% if top_scores %}
+                {% for record in top_scores %}
+                    <li>
+                        <div class="player-info">
+                            <span>{{ forloop.counter }}. {{ record.name }}</span>
+                            <span>Score: {{ record.score }}</span>
+                        </div>
+                        <span class="duration">{{ record.game_duration_formatted }}</span>
+                    </li>
+                    
+                {% endfor %}
+            {% else %}
+                <li>No scores recorded yet!</li>
+            {% endif %}
+        </ol>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const foodEatenDisplay = document.getElementById('foodEaten'); // New display element
+
+        const gridSize = 20;
+        let snake = [{x: 10, y: 10}];
+        let food = {};
+        let dx = 0;
+        let dy = 0;
+        let score = 0;
+        let foodEaten = 0; // New variable
+        let gameInterval;
+        let gameSpeed = 150;
+        let changingDirection = false;
+        let startTime; // New variable to track game start time
+
+        // Function to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        function generateFood() {
+            food = {
+                x: Math.floor(Math.random() * (canvas.width / gridSize)),
+                y: Math.floor(Math.random() * (canvas.height / gridSize))
+            };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            snake.forEach(segment => {
+                ctx.fillStyle = 'lime';
+                ctx.strokeStyle = 'darkgreen';
+                ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
+                ctx.strokeRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
+            });
+
+            ctx.fillStyle = 'red';
+            ctx.strokeStyle = 'darkred';
+            ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+            ctx.strokeRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+        }
+
+        function advanceSnake() {
+            const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+
+            if (head.x < 0) head.x = canvas.width / gridSize - 1;
+            if (head.x >= canvas.width / gridSize) head.x = 0;
+            if (head.y < 0) head.y = canvas.height / gridSize - 1;
+            if (head.y >= canvas.height / gridSize) head.y = 0;
+
+            snake.unshift(head);
+
+            const didEatFood = head.x === food.x && head.y === food.y;
+            if (didEatFood) {
+                score += 10;
+                foodEaten++; // Increment food eaten
+                scoreDisplay.textContent = `Score: ${score}`;
+                foodEatenDisplay.textContent = `Food Eaten: ${foodEaten}`; // Update display
+                generateFood();
+            } else {
+                snake.pop();
+            }
+            changingDirection = false;
+        }
+
+        function didGameEnd() {
+            for (let i = 4; i < snake.length; i++) {
+                if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true;
+            }
+            return false;
+        }
+
+        // --- MODIFIED FUNCTION: Send Game Record to API ---
+        function sendGameRecordToAPI(finalScore, finalFoodEaten, finalGameDurationMs) {
+            let playerName = prompt("Game Over! Enter your name to save your score:");
+            if (!playerName) {
+                playerName = "Anonymous"; // Default name if none entered
+            }
+
+            fetch('/api/save_score', { // Updated API endpoint URL
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    name: playerName,
+                    score: finalScore,
+                    game_duration_ms: finalGameDurationMs, // Sending in milliseconds
+                    food_eaten: finalFoodEaten
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('API response:', data);
+                if (data.status === 'success') {
+                    console.log('Game record successfully sent to API!');
+                    // Optionally, you might want to refresh the leaderboard here
+                    // if you implement an API for getting scores, or reload the page.
+                    // For now, it just saves.
+                } else {
+                    console.error('Failed to send game record:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error sending game record to API:', error);
+            });
+        }
+        // --- END MODIFIED FUNCTION ---
+
+        function changeDirection(event) {
+            if (changingDirection) return;
+            changingDirection = true;
+
+            const keyPressed = event.keyCode;
+            const LEFT_KEY = 37;
+            const UP_KEY = 38;
+            const RIGHT_KEY = 39;
+            const DOWN_KEY = 40;
+
+            const goingUp = dy === -1;
+            const goingDown = dy === 1;
+            const goingRight = dx === 1;
+            const goingLeft = dx === -1;
+
+            if (keyPressed === LEFT_KEY && !goingRight) {
+                dx = -1;
+                dy = 0;
+            }
+            if (keyPressed === UP_KEY && !goingDown) {
+                dx = 0;
+                dy = -1;
+            }
+            if (keyPressed === RIGHT_KEY && !goingLeft) {
+                dx = 1;
+                dy = 0;
+            }
+            if (keyPressed === DOWN_KEY && !goingUp) {
+                dx = 0;
+                dy = 1;
+            }
+        }
+
+        function resetGame() {
+            snake = [{x: 10, y: 10}];
+            dx = 0;
+            dy = 0;
+            score = 0;
+            foodEaten = 0; // Reset food eaten
+            scoreDisplay.textContent = `Score: ${score}`;
+            foodEatenDisplay.textContent = `Food Eaten: ${foodEaten}`; // Update display
+            generateFood();
+            clearInterval(gameInterval);
+            gameSpeed = 150;
+            startTime = Date.now(); // Reset and start timer
+            gameInterval = setInterval(gameLoop, gameSpeed);
+            draw();
+        }
+
+        function gameLoop() {
+            if (didGameEnd()) {
+                clearInterval(gameInterval);
+                const endTime = Date.now();
+                const gameDurationMs = endTime - startTime; // Calculate duration in milliseconds
+
+                // Pass all relevant data to the API function
+                sendGameRecordToAPI(score, foodEaten, gameDurationMs);
+                return;
+            }
+            advanceSnake();
+            draw();
+        }
+
+        document.addEventListener('keydown', changeDirection);
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'r' || event.key === 'R') {
+                resetGame();
+            }
+        });
+
+        generateFood();
+        resetGame(); // Start the game when the page loads
+    </script>
+</body>
+</html>
