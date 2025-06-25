@@ -20,8 +20,8 @@ from rest_framework.authtoken import views as auth_token_views # Import the toke
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('amitai.urls')),
+    path('amitai/', include('amitai.urls')),
     path('api-auth/', include('rest_framework.urls')),
     path('finance_tracker/', include('finance_tracker.urls')),
-    path('api/auth/token/', auth_token_views.obtain_auth_token), # Add this line for token login
+    path('api/auth/token/', auth_token_views.obtain_auth_token), 
 ]

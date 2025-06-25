@@ -1,48 +1,569 @@
-
-
-{% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mad Libs Game</title>
-    <link rel="stylesheet" href="{% static 'madlibs.css' %}">
+    <title>Madlibs Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align items to the start for better content flow */
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 900px; /* Increased max-width for better layout */
+            width: 100%;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .form-group label {
+            font-weight: 600;
+            color: #34495e;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #dcdfe6;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            box-sizing: border-box; /* Include padding in width */
+        }
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .btn {
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-right: 10px; /* Space out buttons */
+        }
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background-color: #ecf0f1;
+            color: #34495e;
+            border: 1px solid #bdc3c7;
+        }
+        .btn-secondary:hover {
+            background-color: #dbe4e6;
+            transform: translateY(-2px);
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+        }
+        .madlib-item {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .madlib-item strong {
+            color: #2c3e50;
+        }
+        .madlib-item .paragraph {
+            background-color: #ffffff;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+            font-style: italic;
+        }
+        .madlib-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+        }
+        .loading, .error-message {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.1rem;
+            color: #e67e22;
+        }
+        .error-message {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .stat-item {
+            background-color: #dbe4e6;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #34495e;
+            font-weight: 500;
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <h1>Welcome to the Mad Libs Game!</h1>
-        <p>In this game, I will ask for a few words in order to fill in a paragraph.</p>
+<body class="bg-gray-100 p-4">
+    <div class="container mx-auto p-6 bg-white rounded-xl shadow-lg">
+        <h1 class="text-3xl font-bold mb-6">Madlibs Manager</h1>
 
-        <div class="input-section">
-            <label for="adj1">Enter an adjective (a descriptive word):</label>
-            <input type="text" id="adj1">
-
-            <label for="noun1">Enter a noun (person, place or thing):</label>
-            <input type="text" id="noun1">
-
-            <label for="adj2">Enter an adjective (a descriptive word):</label>
-            <input type="text" id="adj2"> 
-
-            <label for="verb1">Enter an action ending with 'ing':</label>
-            <input type="text" id="verb1">
-
-            <label for="adj3">Enter an adjective (a descriptive word):</label>
-            <input type="text" id="adj3">
-
-            <label for="adj4">Enter an adjective (a descriptive word):</label>
-            <input type="text" id="adj4">
-
-            <button id="generateStory">Generate Story</button>
+        <!-- Form for Create/Update -->
+        <div class="mb-8 p-6 bg-blue-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-semibold mb-4 text-blue-800" id="form-title">Create New Madlib</h2>
+            <input type="hidden" id="madlib-id">
+            <div class="form-group mb-4">
+                <label for="paragraph">Paragraph:</label>
+                <textarea id="paragraph" class="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Enter the madlib paragraph..."></textarea>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                <div class="form-group">
+                    <label for="noun">Nouns:</label>
+                    <input type="number" id="noun" value="0" class="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <div class="form-group">
+                    <label for="adjective">Adjectives:</label>
+                    <input type="number" id="adjective" value="0" class="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <div class="form-group">
+                    <label for="verb">Verbs:</label>
+                    <input type="number" id="verb" value="0" class="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <div class="form-group">
+                    <label for="funny_word">Funny Words:</label>
+                    <input type="number" id="funny_word" value="0" class="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <div class="form-group">
+                    <label for="funny_name">Funny Names:</label>
+                    <input type="number" id="funny_name" value="0" class="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <button id="save-btn" class="btn btn-primary mr-2">Create Madlib</button>
+                <button id="cancel-edit-btn" class="btn btn-secondary" style="display: none;">Cancel Edit</button>
+            </div>
         </div>
 
-        <div class="story-output">
-            <h2>Your Mad Libs Story:</h2>
-            <p id="madLibsStory"></p>
+        <!-- Search/Filter Section (Optional, but good for real apps) -->
+        <div class="mb-6 p-4 bg-gray-50 rounded-lg shadow-inner">
+            <h2 class="text-xl font-semibold mb-3 text-gray-700">Search Madlibs</h2>
+            <div class="flex flex-wrap items-center gap-4">
+                <input type="text" id="search-id" placeholder="Enter Madlib ID to search" class="flex-grow border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400">
+                <button id="search-btn" class="btn btn-secondary">Search by ID</button>
+                <button id="clear-search-btn" class="btn btn-secondary">Clear Search</button>
+            </div>
         </div>
+
+        <!-- Madlibs List -->
+        <h2 class="text-2xl font-semibold mb-4 text-gray-800">All Madlibs</h2>
+        <div id="madlibs-list" class="space-y-4">
+            <div class="loading text-center text-gray-500">Loading madlibs...</div>
+        </div>
+        <div id="error-message" class="error-message hidden"></div>
     </div>
 
-    <script src="{% static 'madlibs.js' %}"></script>
+    <script>
+        // Base URL for your Django API
+        // Make sure to adjust this if your Django server is on a different port or domain.
+        const API_BASE_URL = 'http://127.0.0.1:8000/amitai/madlibs/'; // Example: http://localhost:8000/api/amitai/madlibs/
+
+        // Get DOM elements
+        const madlibIdInput = document.getElementById('madlib-id');
+        const paragraphInput = document.getElementById('paragraph');
+        const nounInput = document.getElementById('noun');
+        const adjectiveInput = document.getElementById('adjective');
+        const verbInput = document.getElementById('verb');
+        const funnyWordInput = document.getElementById('funny_word');
+        const funnyNameInput = document.getElementById('funny_name');
+        const saveBtn = document.getElementById('save-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const madlibsList = document.getElementById('madlibs-list');
+        const formTitle = document.getElementById('form-title');
+        const searchIdInput = document.getElementById('search-id');
+        const searchBtn = document.getElementById('search-btn');
+        const clearSearchBtn = document.getElementById('clear-search-btn');
+        const errorMessageDiv = document.getElementById('error-message');
+
+        let isEditing = false; // Flag to determine if we are editing or creating
+
+        /**
+         * Shows an error message to the user.
+         * @param {string} message - The error message to display.
+         */
+        function showErrorMessage(message) {
+            errorMessageDiv.textContent = message;
+            errorMessageDiv.classList.remove('hidden');
+        }
+
+        /**
+         * Clears any displayed error messages.
+         */
+        function clearErrorMessage() {
+            errorMessageDiv.textContent = '';
+            errorMessageDiv.classList.add('hidden');
+        }
+
+        /**
+         * Fetches all madlibs from the API and displays them.
+         */
+        async function fetchMadlibs() {
+            madlibsList.innerHTML = '<div class="loading">Loading madlibs...</div>'; // Show loading indicator
+            clearErrorMessage();
+            try {
+                const response = await fetch(API_BASE_URL);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`HTTP error! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
+                }
+                const madlibs = await response.json();
+                displayMadlibs(madlibs);
+            } catch (error) {
+                console.error('Error fetching madlibs:', error);
+                showErrorMessage(`Failed to load madlibs: ${error.message}. Please ensure the Django server is running.`);
+                madlibsList.innerHTML = ''; // Clear loading message on error
+            }
+        }
+
+        /**
+         * Fetches a single madlib by its ID.
+         * @param {number} id - The ID of the madlib to fetch.
+         */
+        async function fetchMadlibById(id) {
+            madlibsList.innerHTML = '<div class="loading">Searching...</div>'; // Show loading indicator
+            clearErrorMessage();
+            try {
+                const response = await fetch(`${API_BASE_URL}${id}/`);
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        showErrorMessage(`Madlib with ID ${id} not found.`);
+                        madlibsList.innerHTML = '<p class="text-center text-gray-500">No madlib found with this ID.</p>';
+                    } else {
+                        const errorData = await response.json();
+                        throw new Error(`HTTP error! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
+                    }
+                    return;
+                }
+                const madlib = await response.json();
+                displayMadlibs([madlib]); // Display as a list of one item
+            } catch (error) {
+                console.error(`Error fetching madlib by ID ${id}:`, error);
+                showErrorMessage(`Failed to load madlib: ${error.message}.`);
+                madlibsList.innerHTML = '';
+            }
+        }
+
+        /**
+         * Displays a list of madlibs on the page.
+         * @param {Array<Object>} madlibs - An array of madlib objects.
+         */
+        function displayMadlibs(madlibs) {
+            madlibsList.innerHTML = ''; // Clear previous list
+            if (madlibs.length === 0) {
+                madlibsList.innerHTML = '<p class="text-center text-gray-500">No madlibs available.</p>';
+                return;
+            }
+
+            madlibs.forEach(madlib => {
+                const madlibDiv = document.createElement('div');
+                madlibDiv.className = 'madlib-item';
+                madlibDiv.innerHTML = `
+                    <div class="text-lg font-bold text-gray-800">ID: ${madlib.id}</div>
+                    <div class="paragraph">${madlib.paragraph}</div>
+                    <div class="stats-grid">
+                        <span class="stat-item">Noun: ${madlib.noun}</span>
+                        <span class="stat-item">Adjective: ${madlib.adjective}</span>
+                        <span class="stat-item">Verb: ${madlib.verb}</span>
+                        <span class="stat-item">Funny Word: ${madlib.funny_word}</span>
+                        <span class="stat-item">Funny Name: ${madlib.funny_name}</span>
+                        <span class="stat-item">Likes: ${madlib.likes}</span>
+                        <span class="stat-item">Dislikes: ${madlib.dislikes}</span>
+                    </div>
+                    <div class="madlib-actions">
+                        <button onclick="editMadlib(${madlib.id})" class="btn btn-secondary">Edit</button>
+                        <button onclick="deleteMadlib(${madlib.id})" class="btn btn-danger">Delete</button>
+                        <button onclick="updateLikes(${madlib.id}, ${madlib.likes})" class="btn btn-primary">Like (${madlib.likes})</button>
+                        <button onclick="updateDislikes(${madlib.id}, ${madlib.dislikes})" class="btn btn-secondary">Dislike (${madlib.dislikes})</button>
+                    </div>
+                `;
+                madlibsList.appendChild(madlibDiv);
+            });
+        }
+
+        /**
+         * Resets the form fields and changes the button text/state for creation.
+         */
+        function resetForm() {
+            madlibIdInput.value = '';
+            paragraphInput.value = '';
+            nounInput.value = '0';
+            adjectiveInput.value = '0';
+            verbInput.value = '0';
+            funnyWordInput.value = '0';
+            funnyNameInput.value = '0';
+            saveBtn.textContent = 'Create Madlib';
+            formTitle.textContent = 'Create New Madlib';
+            cancelEditBtn.style.display = 'none';
+            isEditing = false;
+            clearErrorMessage();
+        }
+
+        /**
+         * Populates the form with data for editing a specific madlib.
+         * @param {number} id - The ID of the madlib to edit.
+         */
+        async function editMadlib(id) {
+            clearErrorMessage();
+            try {
+                const response = await fetch(`${API_BASE_URL}${id}/`);
+                if (!response.ok) {
+                     const errorData = await response.json();
+                     throw new Error(`HTTP error! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
+                }
+                const madlib = await response.json();
+
+                madlibIdInput.value = madlib.id;
+                paragraphInput.value = madlib.paragraph;
+                nounInput.value = madlib.noun;
+                adjectiveInput.value = madlib.adjective;
+                verbInput.value = madlib.verb;
+                funnyWordInput.value = madlib.funny_word;
+                funnyNameInput.value = madlib.funny_name;
+                // Likes and Dislikes are not edited directly via form, but can be updated via buttons
+                saveBtn.textContent = 'Update Madlib';
+                formTitle.textContent = `Edit Madlib (ID: ${madlib.id})`;
+                cancelEditBtn.style.display = 'inline-block';
+                isEditing = true;
+
+                // Scroll to the form
+                saveBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            } catch (error) {
+                console.error(`Error fetching madlib for edit (ID: ${id}):`, error);
+                showErrorMessage(`Failed to fetch madlib for editing: ${error.message}`);
+            }
+        }
+
+        /**
+         * Handles saving (creating or updating) a madlib.
+         */
+        saveBtn.addEventListener('click', async () => {
+            clearErrorMessage();
+            const madlibData = {
+                paragraph: paragraphInput.value,
+                noun: parseInt(nounInput.value),
+                adjective: parseInt(adjectiveInput.value),
+                verb: parseInt(verbInput.value),
+                funny_word: parseInt(funnyWordInput.value),
+                funny_name: parseInt(funnyNameInput.value),
+                // Likes and dislikes are not part of the create/update form directly
+                // They are managed by specific like/dislike buttons
+                likes: 0, // Default for new, will be overwritten if updating existing
+                dislikes: 0 // Default for new, will be overwritten if updating existing
+            };
+
+            // Basic validation
+            if (!madlibData.paragraph) {
+                showErrorMessage('Paragraph cannot be empty.');
+                return;
+            }
+
+            try {
+                let response;
+                let method;
+                let url;
+
+                if (isEditing && madlibIdInput.value) {
+                    // Update existing madlib
+                    method = 'PUT'; // or PATCH for partial updates
+                    url = `${API_BASE_URL}${madlibIdInput.value}/`;
+
+                    // For PUT, we need to send all fields, including likes/dislikes
+                    // Fetch existing madlib to get current likes/dislikes
+                    const existingMadlibResponse = await fetch(url);
+                    if (!existingMadlibResponse.ok) {
+                        throw new Error(`Failed to fetch existing madlib for update: ${existingMadlibResponse.statusText}`);
+                    }
+                    const existingMadlib = await existingMadlibResponse.json();
+                    madlibData.likes = existingMadlib.likes;
+                    madlibData.dislikes = existingMadlib.dislikes;
+
+                } else {
+                    // Create new madlib
+                    method = 'POST';
+                    url = API_BASE_URL;
+                }
+
+                response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(madlibData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`API error! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
+                }
+
+                const result = await response.json();
+                console.log('Save successful:', result);
+                resetForm(); // Reset form after successful save
+                fetchMadlibs(); // Refresh the list
+            } catch (error) {
+                console.error('Error saving madlib:', error);
+                showErrorMessage(`Failed to save madlib: ${error.message}`);
+            }
+        });
+
+        // Cancel edit button functionality
+        cancelEditBtn.addEventListener('click', resetForm);
+
+        /**
+         * Deletes a madlib by its ID.
+         * @param {number} id - The ID of the madlib to delete.
+         */
+        async function deleteMadlib(id) {
+            clearErrorMessage();
+            // In a real application, you'd add a confirmation dialog here.
+            if (!confirm(`Are you sure you want to delete Madlib with ID: ${id}?`)) {
+                return; // User cancelled
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}${id}/`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    // Django REST Framework might return 204 No Content for successful DELETE,
+                    // but if there's an error, it might be a JSON response.
+                    const errorText = await response.text(); // Get raw text to check if it's JSON
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        throw new Error(`API error! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
+                    } catch (e) {
+                        // Not a JSON error, just a plain text error or unexpected status
+                        throw new Error(`HTTP error! status: ${response.status}, details: ${errorText || response.statusText}`);
+                    }
+                }
+
+                console.log(`Madlib with ID ${id} deleted.`);
+                fetchMadlibs(); // Refresh the list
+                resetForm(); // Also reset the form in case the deleted item was being edited
+            } catch (error) {
+                console.error(`Error deleting madlib (ID: ${id}):`, error);
+                showErrorMessage(`Failed to delete madlib: ${error.message}`);
+            }
+        }
+
+        /**
+         * Updates the likes count for a madlib.
+         * @param {number} id - The ID of the madlib to update.
+         * @param {number} currentLikes - The current number of likes.
+         */
+        async function updateLikes(id, currentLikes) {
+            clearErrorMessage();
+            try {
+                const response = await fetch(`${API_BASE_URL}${id}/`, {
+                    method: 'PATCH', // Use PATCH for partial update
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ likes: currentLikes + 1 })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`API error! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
+                }
+
+                console.log(`Madlib ID ${id} liked.`);
+                fetchMadlibs(); // Refresh the list to show updated count
+            } catch (error) {
+                console.error(`Error updating likes for madlib (ID: ${id}):`, error);
+                showErrorMessage(`Failed to update likes: ${error.message}`);
+            }
+        }
+
+        /**
+         * Updates the dislikes count for a madlib.
+         * @param {number} id - The ID of the madlib to update.
+         * @param {number} currentDislikes - The current number of dislikes.
+         */
+        async function updateDislikes(id, currentDislikes) {
+            clearErrorMessage();
+            try {
+                const response = await fetch(`${API_BASE_URL}${id}/`, {
+                    method: 'PATCH', // Use PATCH for partial update
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ dislikes: currentDislikes + 1 })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`API error! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
+                }
+
+                console.log(`Madlib ID ${id} disliked.`);
+                fetchMadlibs(); // Refresh the list to show updated count
+            } catch (error) {
+                console.error(`Error updating dislikes for madlib (ID: ${id}):`, error);
+                showErrorMessage(`Failed to update dislikes: ${error.message}`);
+            }
+        }
+
+        // Search by ID functionality
+        searchBtn.addEventListener('click', () => {
+            const id = searchIdInput.value;
+            if (id) {
+                fetchMadlibById(id);
+            } else {
+                showErrorMessage('Please enter an ID to search.');
+            }
+        });
+
+        // Clear search and show all madlibs
+        clearSearchBtn.addEventListener('click', () => {
+            searchIdInput.value = '';
+            fetchMadlibs();
+        });
+
+
+        // Initial fetch of madlibs when the page loads
+        document.addEventListener('DOMContentLoaded', fetchMadlibs);
+    </script>
 </body>
 </html>

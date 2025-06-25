@@ -4,8 +4,10 @@ from django.db import models
 from django.views.decorators.csrf import csrf_exempt
 import json
 from datetime import timedelta
-
-# Import the GameRecord model
+from .serializers import MadlibsSerializer
+from rest_framework import viewsets
+from rest_framework.permissions import AllowAny
+from .models import madlibs
 from .models import GameRecord
 
 def api_home(request):
@@ -42,6 +44,8 @@ def snake(request):
     context = {
         'top_scores': top_scores_list
     }
+    print("shilo")
+    print(context)
     return render(request, 'snake_game/snake.html', context)
 
 
@@ -147,5 +151,38 @@ def save_score(request):
 
 
 
-def madlibs(request):
+def madlibs_url(request):
     return render(request, 'madlibs/madlibs.html')
+
+def adding_data(request):
+    return render(request, 'adding_data/adding_data.html')
+
+def create_data(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            paragraph = data.get('paragraph')
+            if not isinstance(paragraph, str):
+                return JsonResponse({'status': 'error', 'message': 'Name must be a string'}, status=400)
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            # Log the exception for debugging in production environments
+            # import logging
+            # logging.exception("Error saving game record")
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only POST requests are allowed'}, status=405)
+        
+
+
+
+
+class MadlibsViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows Madlibs to be viewed or edited.
+    """
+    queryset = madlibs.objects.all().order_by('-id') # Order by ID descending, adjust as needed
+    serializer_class = MadlibsSerializer
+    authentication_classes = [] # Set to an empty list to disable authentication
+    permission_classes = [AllowAny] # Allow any user to access this view

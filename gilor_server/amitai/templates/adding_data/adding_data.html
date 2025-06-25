@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Mad Libs Game</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the Inter font and basic body setup */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        /* Ensure rounded corners on all interactable elements and containers */
+        input, textarea, button, select {
+            border-radius: 0.375rem; /* Equivalent to Tailwind's rounded-md */
+        }
+        .rounded-lg {
+            border-radius: 0.5rem; /* Tailwind's rounded-lg */
+        }
+        .container-shadow {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white p-6 rounded-lg container-shadow w-full max-w-2xl">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">
+            Mad Libs Fun!
+        </h1>
+
+        <div class="mb-4 text-center">
+            <p class="text-sm font-medium text-gray-600">Database Status:</p>
+            <p id="db-status" class="text-md font-semibold text-blue-600">Initializing...</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex border-b border-gray-200 mb-6">
+            <button id="tab-create" class="flex-1 py-3 px-4 text-center text-sm font-medium transition-colors duration-200 ease-in-out border-b-2 border-transparent hover:bg-gray-50 focus:outline-none focus:bg-gray-50 active-tab">
+                Create Template
+            </button>
+            <button id="tab-play" class="flex-1 py-3 px-4 text-center text-sm font-medium transition-colors duration-200 ease-in-out border-b-2 border-transparent hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
+                Play Mad Libs
+            </button>
+            <button id="tab-view" class="flex-1 py-3 px-4 text-center text-sm font-medium transition-colors duration-200 ease-in-out border-b-2 border-transparent hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
+                View Stories
+            </button>
+        </div>
+
+        <!-- Content Sections -->
+        <div id="section-create" class="content-section space-y-4">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Create New Template</h2>
+            <div>
+                <label for="templateName" class="block text-sm font-medium text-gray-700 mb-1">
+                    Template Name:
+                </label>
+                <input
+                    type="text"
+                    id="templateName"
+                    placeholder="e.g., 'A Day at the Zoo'"
+                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+            </div>
+            <div>
+                <label for="templateText" class="block text-sm font-medium text-gray-700 mb-1">
+                    Template Text: (Use [WORD_TYPE] for blanks, e.g., "The [ADJECTIVE] [NOUN] went [VERB]...")
+                </label>
+                <textarea
+                    id="templateText"
+                    placeholder="Example: The [ADJECTIVE] [NOUN] bravely [VERB] through the [PLURAL_NOUN]."
+                    rows="6"
+                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                ></textarea>
+            </div>
+            <button
+                id="saveTemplateButton"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-md shadow-lg transition duration-200 ease-in-out transform hover:scale-105"
+            >
+                Save Template
+            </button>
+        </div>
+
+        <div id="section-play" class="content-section hidden space-y-4">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Play Mad Libs</h2>
+            <div>
+                <label for="templateSelect" class="block text-sm font-medium text-gray-700 mb-1">
+                    Select a Template:
+                </label>
+                <select
+                    id="templateSelect"
+                    class="w-full p-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    <option value="">-- Choose a template --</option>
+                </select>
+            </div>
+            <div id="wordInputsContainer" class="space-y-3 p-4 bg-gray-50 rounded-lg hidden">
+                <h3 class="text-lg font-semibold text-gray-800">Fill in the Blanks:</h3>
+                <!-- Dynamic word input fields will be inserted here -->
+            </div>
+            <button
+                id="generateStoryButton"
+                class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-md shadow-lg transition duration-200 ease-in-out transform hover:scale-105 hidden"
+            >
+                Generate Story
+            </button>
+            <div id="generatedStoryDisplay" class="hidden bg-purple-100 text-purple-800 p-4 rounded-md break-words border border-purple-200">
+                <h3 class="font-semibold mb-2">Your Story:</h3>
+                <pre id="generatedStoryContent" class="whitespace-pre-wrap text-base"></pre>
+            </div>
+        </div>
+
+        <div id="section-view" class="content-section hidden space-y-4">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Completed Stories</h2>
+            <div id="completedStoriesList" class="space-y-4">
+                <!-- Completed stories will be loaded here -->
+                <p class="text-gray-500 text-center">No stories completed yet. Play a game!</p>
+            </div>
+            <button
+                id="clearStoriesButton"
+                class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-4 rounded-md shadow-lg transition duration-200 ease-in-out transform hover:scale-105"
+            >
+                Clear All Stories
+            </button>
+        </div>
+
+        <!-- Common Message Display -->
+        <div id="message-display" class="hidden bg-blue-100 text-blue-800 p-3 rounded-md mt-6 border border-blue-200">
+            <!-- Messages will be displayed here -->
+        </div>
+
+        <p class="text-xs text-gray-500 mt-6 text-center">
+            Mad Libs game powered by IndexedDB for offline storage.
+        </p>
+    </div>
+
+    <script>
+        // === TWEAKABLE SECTION: Database Configuration ===
+        const DB_NAME = 'amitai_madlibs_db'; // New name for clarity
+        const DB_VERSION = 3; // Increment version to trigger onupgradeneeded for new stores
+        const TEMPLATES_STORE = 'madlibs_templates';
+        const STORIES_STORE = 'completed_madlibs';
+        // =================================================
+
+        let dbInstance = null; // Holds the IDBDatabase instance
+
+        // --- DOM Elements ---
+        const dbStatusElement = document.getElementById('db-status');
+        const messageDisplay = document.getElementById('message-display');
+
+        // Tabs
+        const tabCreate = document.getElementById('tab-create');
+        const tabPlay = document.getElementById('tab-play');
+        const tabView = document.getElementById('tab-view');
+
+        // Sections
+        const sectionCreate = document.getElementById('section-create');
+        const sectionPlay = document.getElementById('section-play');
+        const sectionView = document.getElementById('section-view');
+        const contentSections = [sectionCreate, sectionPlay, sectionView];
+        const tabButtons = [tabCreate, tabPlay, tabView];
+
+        // Create Template Section Elements
+        const templateNameInput = document.getElementById('templateName');
+        const templateTextInput = document.getElementById('templateText');
+        const saveTemplateButton = document.getElementById('saveTemplateButton');
+
+        // Play Mad Libs Section Elements
+        const templateSelect = document.getElementById('templateSelect');
+        const wordInputsContainer = document.getElementById('wordInputsContainer');
+        const generateStoryButton = document.getElementById('generateStoryButton');
+        const generatedStoryDisplay = document.getElementById('generatedStoryDisplay');
+        const generatedStoryContent = document.getElementById('generatedStoryContent');
+
+        // View Stories Section Elements
+        const completedStoriesList = document.getElementById('completedStoriesList');
+        const clearStoriesButton = document.getElementById('clearStoriesButton');
+
+        // --- Utility Functions ---
+
+        /**
+         * Generates a simple unique ID (timestamp-based for simplicity).
+         * In a real app, consider UUIDs or server-generated IDs.
+         */
+        function generateUniqueId() {
+            return Date.now().toString() + Math.random().toString(36).substring(2, 9);
+        }
+
+        /**
+         * Displays a message to the user.
+         * @param {string} msg The message to display.
+         * @param {string} type Optional. 'success', 'error', 'info'. Defaults to 'info'.
+         */
+        function displayMessage(msg, type = 'info') {
+            messageDisplay.textContent = msg;
+            messageDisplay.classList.remove('hidden', 'bg-blue-100', 'bg-green-100', 'bg-red-100', 'text-blue-800', 'text-green-800', 'text-red-800');
+            messageDisplay.classList.add('block');
+
+            if (type === 'success') {
+                messageDisplay.classList.add('bg-green-100', 'text-green-800');
+            } else if (type === 'error') {
+                messageDisplay.classList.add('bg-red-100', 'text-red-800');
+            } else {
+                messageDisplay.classList.add('bg-blue-100', 'text-blue-800');
+            }
+            // Hide message after a few seconds
+            setTimeout(() => {
+                messageDisplay.classList.add('hidden');
+            }, 5000);
+        }
+
+        /**
+         * Updates the database status display.
+         * @param {string} statusMsg The status message.
+         */
+        function updateDbStatus(statusMsg) {
+            dbStatusElement.textContent = statusMsg;
+        }
+
+        /**
+         * Switches the active content section and updates tab styling.
+         * @param {HTMLElement} targetSection The section to show.
+         * @param {HTMLElement} targetTab The tab button to mark active.
+         */
+        function showSection(targetSection, targetTab) {
+            contentSections.forEach(section => section.classList.add('hidden'));
+            tabButtons.forEach(tab => tab.classList.remove('active-tab', 'border-indigo-600', 'text-indigo-600'));
+
+            targetSection.classList.remove('hidden');
+            targetTab.classList.add('active-tab', 'border-indigo-600', 'text-indigo-600');
+            // Clear any old generated story display when changing sections
+            generatedStoryDisplay.classList.add('hidden');
+            generatedStoryContent.textContent = '';
+            messageDisplay.classList.add('hidden'); // Hide general messages
+        }
+
+        // --- IndexedDB Functions ---
+
+        /**
+         * Initializes the IndexedDB database.
+         * Opens an existing database or creates a new one if it doesn't exist.
+         * Sets up the object stores if needed.
+         */
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                updateDbStatus('Opening database...');
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onerror = (event) => {
+                    const errorMsg = `Database error: ${event.target.errorCode} - ${event.target.error.message}`;
+                    updateDbStatus(errorMsg);
+                    console.error("IndexedDB error:", event.target.error);
+                    displayMessage(`Error: ${errorMsg}`, 'error');
+                    reject(event.target.error);
+                };
+
+                request.onsuccess = (event) => {
+                    dbInstance = event.target.result;
+                    updateDbStatus('Database opened successfully.');
+                    console.log("Database opened:", dbInstance);
+                    displayMessage('Database ready!', 'success');
+                    resolve(dbInstance);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+
+                    // Create madlibs_templates store
+                    if (!database.objectStoreNames.contains(TEMPLATES_STORE)) {
+                        database.createObjectStore(TEMPLATES_STORE, { keyPath: 'id' });
+                        console.log(`Object store '${TEMPLATES_STORE}' created.`);
+                    }
+
+                    // Create completed_madlibs store
+                    if (!database.objectStoreNames.contains(STORIES_STORE)) {
+                        database.createObjectStore(STORIES_STORE, { keyPath: 'id' });
+                        console.log(`Object store '${STORIES_STORE}' created.`);
+                    }
+
+                    updateDbStatus('Database upgrade needed and completed.');
+                    displayMessage('Database schema updated!', 'info');
+                };
+            });
+        }
+
+        /**
+         * Helper function to get a transaction and object store.
+         * @param {string} storeName The name of the object store.
+         * @param {"readonly" | "readwrite"} mode The transaction mode.
+         * @returns {IDBObjectStore} The object store.
+         * @throws {Error} If IndexedDB is not initialized.
+         */
+        function getObjectStore(storeName, mode) {
+            if (!dbInstance) {
+                const errorMsg = "IndexedDB is not initialized. Please refresh.";
+                console.error(errorMsg);
+                updateDbStatus("Error: Database not ready.");
+                displayMessage(`Error: ${errorMsg}`, 'error');
+                throw new Error(errorMsg);
+            }
+            const transaction = dbInstance.transaction(storeName, mode);
+            transaction.onerror = (event) => {
+                console.error(`Transaction error (${mode}):`, event.target.error);
+                displayMessage(`Transaction error: ${event.target.error.message}`, 'error');
+            };
+            return transaction.objectStore(storeName);
+        }
+
+        /**
+         * Saves or updates an object in the specified store.
+         * @param {string} storeName The name of the object store.
+         * @param {object} data The data object to store. Must have an 'id' property.
+         * @returns {Promise<string>} A promise that resolves with a success message or rejects with an error.
+         */
+        async function putDataInStore(storeName, data) {
+            if (!data || typeof data.id === 'undefined') {
+                displayMessage("Error: Data must have an 'id' property.", 'error');
+                return Promise.reject(new Error("Data must have an 'id' property."));
+            }
+            return new Promise((resolve, reject) => {
+                try {
+                    const store = getObjectStore(storeName, 'readwrite');
+                    const request = store.put(data);
+
+                    request.onsuccess = () => {
+                        resolve(`Data with ID '${data.id}' saved successfully in '${storeName}'.`);
+                    };
+
+                    request.onerror = (event) => {
+                        reject(event.target.error);
+                    };
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        /**
+         * Retrieves an object from the specified store by ID.
+         * @param {string} storeName The name of the object store.
+         * @param {IDBValidKey} id The ID of the data to retrieve.
+         * @returns {Promise<object | undefined>} A promise that resolves with the retrieved data or undefined if not found.
+         */
+        async function getDataFromStore(storeName, id) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const store = getObjectStore(storeName, 'readonly');
+                    const request = store.get(id);
+
+                    request.onsuccess = () => {
+                        resolve(request.result);
+                    };
+
+                    request.onerror = (event) => {
+                        reject(event.target.error);
+                    };
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        /**
+         * Retrieves all objects from the specified store.
+         * @param {string} storeName The name of the object store.
+         * @returns {Promise<object[]>} A promise that resolves with an array of all objects.
+         */
+        async function getAllDataFromStore(storeName) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const store = getObjectStore(storeName, 'readonly');
+                    const request = store.getAll();
+
+                    request.onsuccess = () => {
+                        resolve(request.result);
+                    };
+
+                    request.onerror = (event) => {
+                        reject(event.target.error);
+                    };
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        /**
+         * Clears all data from the specified object store.
+         * @param {string} storeName The name of the object store.
+         * @returns {Promise<string>} A promise that resolves with a success message or rejects with an error.
+         */
+        async function clearStore(storeName) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const store = getObjectStore(storeName, 'readwrite');
+                    const request = store.clear();
+
+                    request.onsuccess = () => {
+                        resolve(`All data cleared from '${storeName}'.`);
+                    };
+
+                    request.onerror = (event) => {
+                        reject(event.target.error);
+                    };
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        // --- Mad Libs Game Logic ---
+
+        /**
+         * Extracts placeholders (e.g., [NOUN], [ADJECTIVE]) from a template string.
+         * Returns an array of unique placeholder types (e.g., ['NOUN', 'ADJECTIVE']).
+         */
+        function extractPlaceholders(templateText) {
+            const matches = templateText.matchAll(/\[(.*?)\]/g);
+            const placeholders = new Set(); // Use a Set to store unique placeholder types
+            for (const match of matches) {
+                placeholders.add(match[1].trim().toUpperCase()); // Add uppercase to standardize
+            }
+            return Array.from(placeholders); // Convert Set to Array
+        }
+
+        /**
+         * Provides a helpful suffix for placeholder prompts based on type.
+         */
+        function getPromptSuffix(placeholderType) {
+            switch (placeholderType.toLowerCase()) {
+                case 'noun': return ' (person, place, thing)';
+                case 'adjective': return ' (describing word)';
+                case 'verb': return ' (action word)';
+                case 'digit': return ' (a number)';
+                case 'funny word': return ' (something silly)';
+                case 'plural noun': return ' (more than one person, place, or thing)';
+                default: return '';
+            }
+        }
+
+        // --- Event Handlers ---
+
+        /**
+         * Handles saving a new Mad Libs template.
+         */
+        async function handleSaveTemplate() {
+            const name = templateNameInput.value.trim();
+            const templateText = templateTextInput.value.trim();
+
+            if (!name || !templateText) {
+                displayMessage('Please fill in both template name and text.', 'info');
+                return;
+            }
+
+            const placeholders = extractPlaceholders(templateText);
+            if (placeholders.length === 0) {
+                displayMessage('Warning: No placeholders found in your template. Use [WORD_TYPE] format.', 'info');
+                // Allow saving without placeholders, but warn user.
+            }
+
+            const newTemplate = {
+                id: generateUniqueId(),
+                name: name,
+                templateText: templateText,
+                placeholders: placeholders
+            };
+
+            try {
+                await putDataInStore(TEMPLATES_STORE, newTemplate);
+                displayMessage(`Template '${name}' saved successfully!`, 'success');
+                templateNameInput.value = ''; // Clear form
+                templateTextInput.value = ''; // Clear form
+                loadTemplatesForPlay(); // Refresh template list
+            } catch (error) {
+                if (error.name === 'ConstraintError') {
+                    displayMessage(`Error: A template with this ID already exists.`, 'error');
+                } else {
+                    displayMessage(`Error saving template: ${error.message}`, 'error');
+                }
+                console.error('Error saving template:', error);
+            }
+        }
+
+        /**
+         * Populates the template selection dropdown.
+         */
+        async function loadTemplatesForPlay() {
+            templateSelect.innerHTML = '<option value="">-- Choose a template --</option>'; // Clear existing options
+            try {
+                const templates = await getAllDataFromStore(TEMPLATES_STORE);
+                if (templates.length === 0) {
+                    const noTemplatesOption = document.createElement('option');
+                    noTemplatesOption.value = '';
+                    noTemplatesOption.textContent = 'No templates available. Create one!';
+                    noTemplatesOption.disabled = true;
+                    templateSelect.appendChild(noTemplatesOption);
+                    templateSelect.disabled = true;
+                } else {
+                    templates.forEach(template => {
+                        const option = document.createElement('option');
+                        option.value = template.id;
+                        option.textContent = template.name;
+                        templateSelect.appendChild(option);
+                    });
+                    templateSelect.disabled = false;
+                }
+            } catch (error) {
+                displayMessage(`Error loading templates: ${error.message}`, 'error');
+                console.error('Error loading templates:', error);
+            }
+        }
+
+        /**
+         * Renders input fields for placeholders when a template is selected.
+         */
+        async function handleTemplateSelectChange() {
+            const selectedTemplateId = templateSelect.value;
+            wordInputsContainer.innerHTML = ''; // Clear previous inputs
+            wordInputsContainer.classList.add('hidden');
+            generateStoryButton.classList.add('hidden');
+            generatedStoryDisplay.classList.add('hidden'); // Hide story if template changes
+
+            if (!selectedTemplateId) {
+                return;
+            }
+
+            try {
+                const template = await getDataFromStore(TEMPLATES_STORE, selectedTemplateId);
+                if (!template) {
+                    displayMessage('Selected template not found.', 'error');
+                    return;
+                }
+
+                if (template.placeholders && template.placeholders.length > 0) {
+                    template.placeholders.forEach(placeholderType => {
+                        const div = document.createElement('div');
+                        div.className = 'mb-2';
+                        const label = document.createElement('label');
+                        label.htmlFor = `word-input-${placeholderType}`;
+                        label.className = 'block text-sm font-medium text-gray-700 mb-1';
+                        label.textContent = `Enter a ${placeholderType}${getPromptSuffix(placeholderType)}:`;
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.id = `word-input-${placeholderType}`;
+                        input.className = 'w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 word-input';
+                        input.dataset.placeholder = placeholderType; // Store the original placeholder type
+                        div.appendChild(label);
+                        div.appendChild(input);
+                        wordInputsContainer.appendChild(div);
+                    });
+                    wordInputsContainer.classList.remove('hidden');
+                    generateStoryButton.classList.remove('hidden');
+                } else {
+                    displayMessage('This template has no placeholders. Just generate the story!', 'info');
+                    generateStoryButton.classList.remove('hidden');
+                }
+            } catch (error) {
+                displayMessage(`Error preparing game: ${error.message}`, 'error');
+                console.error('Error preparing game:', error);
+            }
+        }
+
+        /**
+         * Generates and saves the Mad Libs story.
+         */
+        async function handleGenerateStory() {
+            const selectedTemplateId = templateSelect.value;
+            if (!selectedTemplateId) {
+                displayMessage('Please select a template first.', 'info');
+                return;
+            }
+
+            try {
+                const template = await getDataFromStore(TEMPLATES_STORE, selectedTemplateId);
+                if (!template) {
+                    displayMessage('Selected template not found.', 'error');
+                    return;
+                }
+
+                let filledStory = template.templateText;
+                const inputElements = document.querySelectorAll('#wordInputsContainer .word-input');
+                const filledWords = {};
+
+                inputElements.forEach(input => {
+                    const placeholderType = input.dataset.placeholder;
+                    const word = input.value.trim();
+                    filledWords[placeholderType] = word || `[BLANK ${placeholderType}]`; // Use a placeholder if user leaves blank
+                });
+
+                // Replace all occurrences of each placeholder type
+                for (const placeholderType in filledWords) {
+                    const regex = new RegExp(`\\[${placeholderType}\\]`, 'gi'); // 'gi' for global, case-insensitive
+                    filledStory = filledStory.replace(regex, filledWords[placeholderType]);
+                }
+
+                generatedStoryContent.textContent = filledStory;
+                generatedStoryDisplay.classList.remove('hidden');
+
+                // Save completed story
+                const newStory = {
+                    id: generateUniqueId(),
+                    templateId: selectedTemplateId,
+                    filledText: filledStory,
+                    creationDate: new Date().toISOString()
+                };
+
+                await putDataInStore(STORIES_STORE, newStory);
+                displayMessage('Your story has been saved!', 'success');
+
+                // Clear input fields after generating story
+                inputElements.forEach(input => input.value = '');
+
+            } catch (error) {
+                displayMessage(`Error generating/saving story: ${error.message}`, 'error');
+                console.error('Error generating/saving story:', error);
+            }
+        }
+
+        /**
+         * Displays all completed stories.
+         */
+        async function loadCompletedStories() {
+            completedStoriesList.innerHTML = ''; // Clear previous list
+            try {
+                const stories = await getAllDataFromStore(STORIES_STORE);
+                if (stories.length === 0) {
+                    completedStoriesList.innerHTML = '<p class="text-gray-500 text-center">No stories completed yet. Play a game!</p>';
+                    return;
+                }
+
+                // Fetch template names for each story
+                const storyPromises = stories.map(async story => {
+                    const template = await getDataFromStore(TEMPLATES_STORE, story.templateId);
+                    const templateName = template ? template.name : 'Unknown Template';
+                    return { ...story, templateName };
+                });
+
+                const storiesWithNames = await Promise.all(storyPromises);
+
+                // Sort by creation date, newest first
+                storiesWithNames.sort((a, b) => new Date(b.creationDate) - new Date(a.creationDate));
+
+                storiesWithNames.forEach(story => {
+                    const storyDiv = document.createElement('div');
+                    storyDiv.className = 'bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm';
+                    storyDiv.innerHTML = `
+                        <h4 class="font-bold text-blue-800 mb-1">${story.templateName}</h4>
+                        <p class="text-xs text-gray-600 mb-2">${new Date(story.creationDate).toLocaleString()}</p>
+                        <pre class="whitespace-pre-wrap text-sm text-gray-900">${story.filledText}</pre>
+                    `;
+                    completedStoriesList.appendChild(storyDiv);
+                });
+            } catch (error) {
+                displayMessage(`Error loading completed stories: ${error.message}`, 'error');
+                console.error('Error loading completed stories:', error);
+            }
+        }
+
+        /**
+         * Clears all completed stories from the database.
+         */
+        async function handleClearStories() {
+            if (confirm("Are you sure you want to delete all completed stories? This cannot be undone.")) {
+                try {
+                    await clearStore(STORIES_STORE);
+                    displayMessage('All completed stories cleared!', 'success');
+                    loadCompletedStories(); // Refresh the list
+                } catch (error) {
+                    displayMessage(`Error clearing stories: ${error.message}`, 'error');
+                    console.error('Error clearing stories:', error);
+                }
+            }
+        }
+
+        // --- Initial Setup and Event Listeners ---
+        window.onload = () => {
+            initDB().then(() => {
+                // Initialize active tab and content
+                showSection(sectionCreate, tabCreate);
+                loadTemplatesForPlay(); // Load templates for the play section
+                loadCompletedStories(); // Load stories for the view section
+            }).catch(error => {
+                updateDbStatus(`Failed to initialize database: ${error.message}`);
+                console.error("Initialization failed:", error);
+                displayMessage(`Initialization failed: ${error.message}`, 'error');
+            });
+
+            // Tab Navigation Event Listeners
+            tabCreate.addEventListener('click', () => showSection(sectionCreate, tabCreate));
+            tabPlay.addEventListener('click', () => {
+                showSection(sectionPlay, tabPlay);
+                loadTemplatesForPlay(); // Ensure templates are fresh when playing
+            });
+            tabView.addEventListener('click', () => {
+                showSection(sectionView, tabView);
+                loadCompletedStories(); // Ensure stories are fresh when viewing
+            });
+
+            // Create Template Section Listeners
+            saveTemplateButton.addEventListener('click', handleSaveTemplate);
+
+            // Play Mad Libs Section Listeners
+            templateSelect.addEventListener('change', handleTemplateSelectChange);
+            generateStoryButton.addEventListener('click', handleGenerateStory);
+
+            // View Stories Section Listeners
+            clearStoriesButton.addEventListener('click', handleClearStories);
+        };
+    </script>
+</body>
+</html>
