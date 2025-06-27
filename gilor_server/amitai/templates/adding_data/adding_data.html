@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offline Mad Libs Game</title>
+    <title>CRUD Madlibs with API</title>
     <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -24,6 +24,34 @@
         .container-shadow {
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
+        /* Active tab styling */
+        .active-tab {
+            border-bottom-color: #4f46e5; /* Indigo-600 */
+            color: #4f46e5; /* Indigo-600 */
+        }
+
+        /* Custom Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
@@ -34,8 +62,8 @@
         </h1>
 
         <div class="mb-4 text-center">
-            <p class="text-sm font-medium text-gray-600">Database Status:</p>
-            <p id="db-status" class="text-md font-semibold text-blue-600">Initializing...</p>
+            <p class="text-sm font-medium text-gray-600">API Status:</p>
+            <p id="api-status" class="text-md font-semibold text-blue-600">Initializing...</p>
         </div>
 
         <!-- Navigation Tabs -->
@@ -55,13 +83,13 @@
         <div id="section-create" class="content-section space-y-4">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Create New Template</h2>
             <div>
-                <label for="templateName" class="block text-sm font-medium text-gray-700 mb-1">
-                    Template Name:
+                <label for="TemplateID" class="block text-sm font-medium text-gray-700 mb-1">
+                    Template ID:
                 </label>
                 <input
-                    type="text"
-                    id="templateName"
-                    placeholder="e.g., 'A Day at the Zoo'"
+                    type="integer"
+                    id="TemplateID"
+                    placeholder="e.g., '34294'"
                     class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
             </div>
@@ -88,7 +116,7 @@
             <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Play Mad Libs</h2>
             <div>
                 <label for="templateSelect" class="block text-sm font-medium text-gray-700 mb-1">
-                    Select a Template:
+                    Select a template:
                 </label>
                 <select
                     id="templateSelect"
@@ -133,22 +161,36 @@
         </div>
 
         <p class="text-xs text-gray-500 mt-6 text-center">
-            Mad Libs game powered by IndexedDB for offline storage.
+            Mad Libs game powered by a custom API.
         </p>
     </div>
 
-    <script>
-        // === TWEAKABLE SECTION: Database Configuration ===
-        const DB_NAME = 'amitai_madlibs_db'; // New name for clarity
-        const DB_VERSION = 3; // Increment version to trigger onupgradeneeded for new stores
-        const TEMPLATES_STORE = 'madlibs_templates';
-        const STORIES_STORE = 'completed_madlibs';
-        // =================================================
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmationModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="modalMessage" class="text-xl font-semibold text-gray-900 mb-4"></h3>
+            <div class="flex justify-center space-x-4">
+                <button id="modalConfirmBtn" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-200 ease-in-out">
+                    Confirm
+                </button>
+                <button id="modalCancelBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md shadow-md transition duration-200 ease-in-out">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
 
-        let dbInstance = null; // Holds the IDBDatabase instance
+
+    <script>
+        // === API Configuration ===
+        const API_BASE_URL = 'http://127.0.0.1:8000/amitai';
+        const CREATE_DATA_ENDPOINT = `${API_BASE_URL}/create_data`;
+        // const GET_DATA_ENDPOINT = `${API_BASE_URL}/get_data`; // Assumed endpoint for GET requests
+        const CLEAR_DATA_ENDPOINT = `${API_BASE_URL}/delete_all_data`; // Assumed endpoint for DELETE requests
+        // =========================
 
         // --- DOM Elements ---
-        const dbStatusElement = document.getElementById('db-status');
+        const apiStatusElement = document.getElementById('api-status');
         const messageDisplay = document.getElementById('message-display');
 
         // Tabs
@@ -164,7 +206,7 @@
         const tabButtons = [tabCreate, tabPlay, tabView];
 
         // Create Template Section Elements
-        const templateNameInput = document.getElementById('templateName');
+        const TemplateIDInput = document.getElementById('TemplateID');
         const templateTextInput = document.getElementById('templateText');
         const saveTemplateButton = document.getElementById('saveTemplateButton');
 
@@ -178,6 +220,15 @@
         // View Stories Section Elements
         const completedStoriesList = document.getElementById('completedStoriesList');
         const clearStoriesButton = document.getElementById('clearStoriesButton');
+
+        // Confirmation Modal Elements
+        const confirmationModal = document.getElementById('confirmationModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+        let resolveModalPromise; // Stores the resolve function for the modal promise
+
 
         // --- Utility Functions ---
 
@@ -213,11 +264,20 @@
         }
 
         /**
-         * Updates the database status display.
+         * Updates the API status display.
          * @param {string} statusMsg The status message.
+         * @param {string} type Optional. 'success', 'error', 'info'. Adjusts text color.
          */
-        function updateDbStatus(statusMsg) {
-            dbStatusElement.textContent = statusMsg;
+        function updateApiStatus(statusMsg, type = 'info') {
+            apiStatusElement.textContent = statusMsg;
+            apiStatusElement.classList.remove('text-blue-600', 'text-green-600', 'text-red-600');
+            if (type === 'success') {
+                apiStatusElement.classList.add('text-green-600');
+            } else if (type === 'error') {
+                apiStatusElement.classList.add('text-red-600');
+            } else {
+                apiStatusElement.classList.add('text-blue-600');
+            }
         }
 
         /**
@@ -227,188 +287,120 @@
          */
         function showSection(targetSection, targetTab) {
             contentSections.forEach(section => section.classList.add('hidden'));
-            tabButtons.forEach(tab => tab.classList.remove('active-tab', 'border-indigo-600', 'text-indigo-600'));
+            tabButtons.forEach(tab => tab.classList.remove('active-tab')); // Remove the active-tab class
 
             targetSection.classList.remove('hidden');
-            targetTab.classList.add('active-tab', 'border-indigo-600', 'text-indigo-600');
+            targetTab.classList.add('active-tab'); // Add the active-tab class for styling
             // Clear any old generated story display when changing sections
             generatedStoryDisplay.classList.add('hidden');
             generatedStoryContent.textContent = '';
             messageDisplay.classList.add('hidden'); // Hide general messages
         }
 
-        // --- IndexedDB Functions ---
-
         /**
-         * Initializes the IndexedDB database.
-         * Opens an existing database or creates a new one if it doesn't exist.
-         * Sets up the object stores if needed.
+         * Shows a custom confirmation modal.
+         * @param {string} message The message to display in the modal.
+         * @returns {Promise<boolean>} A promise that resolves to true if confirmed, false if cancelled.
          */
-        function initDB() {
-            return new Promise((resolve, reject) => {
-                updateDbStatus('Opening database...');
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
+        function showConfirmationModal(message) {
+            return new Promise((resolve) => {
+                modalMessage.textContent = message;
+                confirmationModal.classList.remove('hidden');
+                resolveModalPromise = resolve; // Store resolve function
 
-                request.onerror = (event) => {
-                    const errorMsg = `Database error: ${event.target.errorCode} - ${event.target.error.message}`;
-                    updateDbStatus(errorMsg);
-                    console.error("IndexedDB error:", event.target.error);
-                    displayMessage(`Error: ${errorMsg}`, 'error');
-                    reject(event.target.error);
+                const handleConfirm = () => {
+                    confirmationModal.classList.add('hidden');
+                    modalConfirmBtn.removeEventListener('click', handleConfirm);
+                    modalCancelBtn.removeEventListener('click', handleCancel);
+                    resolveModalPromise(true);
                 };
 
-                request.onsuccess = (event) => {
-                    dbInstance = event.target.result;
-                    updateDbStatus('Database opened successfully.');
-                    console.log("Database opened:", dbInstance);
-                    displayMessage('Database ready!', 'success');
-                    resolve(dbInstance);
+                const handleCancel = () => {
+                    confirmationModal.classList.add('hidden');
+                    modalConfirmBtn.removeEventListener('click', handleConfirm);
+                    modalCancelBtn.removeEventListener('click', handleCancel);
+                    resolveModalPromise(false);
                 };
 
-                request.onupgradeneeded = (event) => {
-                    const database = event.target.result;
-
-                    // Create madlibs_templates store
-                    if (!database.objectStoreNames.contains(TEMPLATES_STORE)) {
-                        database.createObjectStore(TEMPLATES_STORE, { keyPath: 'id' });
-                        console.log(`Object store '${TEMPLATES_STORE}' created.`);
-                    }
-
-                    // Create completed_madlibs store
-                    if (!database.objectStoreNames.contains(STORIES_STORE)) {
-                        database.createObjectStore(STORIES_STORE, { keyPath: 'id' });
-                        console.log(`Object store '${STORIES_STORE}' created.`);
-                    }
-
-                    updateDbStatus('Database upgrade needed and completed.');
-                    displayMessage('Database schema updated!', 'info');
-                };
+                modalConfirmBtn.addEventListener('click', handleConfirm);
+                modalCancelBtn.addEventListener('click', handleCancel);
             });
         }
 
-        /**
-         * Helper function to get a transaction and object store.
-         * @param {string} storeName The name of the object store.
-         * @param {"readonly" | "readwrite"} mode The transaction mode.
-         * @returns {IDBObjectStore} The object store.
-         * @throws {Error} If IndexedDB is not initialized.
-         */
-        function getObjectStore(storeName, mode) {
-            if (!dbInstance) {
-                const errorMsg = "IndexedDB is not initialized. Please refresh.";
-                console.error(errorMsg);
-                updateDbStatus("Error: Database not ready.");
-                displayMessage(`Error: ${errorMsg}`, 'error');
-                throw new Error(errorMsg);
-            }
-            const transaction = dbInstance.transaction(storeName, mode);
-            transaction.onerror = (event) => {
-                console.error(`Transaction error (${mode}):`, event.target.error);
-                displayMessage(`Transaction error: ${event.target.error.message}`, 'error');
-            };
-            return transaction.objectStore(storeName);
-        }
+
+        // --- API Interaction Functions ---
 
         /**
-         * Saves or updates an object in the specified store.
-         * @param {string} storeName The name of the object store.
+         * Saves or updates data (template or story) via API.
+         * @param {string} type 'template' or 'story'.
          * @param {object} data The data object to store. Must have an 'id' property.
-         * @returns {Promise<string>} A promise that resolves with a success message or rejects with an error.
+         * @returns {Promise<object>} A promise that resolves with the API response or rejects with an error.
          */
-        async function putDataInStore(storeName, data) {
-            if (!data || typeof data.id === 'undefined') {
-                displayMessage("Error: Data must have an 'id' property.", 'error');
-                return Promise.reject(new Error("Data must have an 'id' property."));
+        async function saveData(type, data) {
+            try {
+                const response = await fetch(CREATE_DATA_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ type, data }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `API error: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error(`Error saving ${type}:`, error);
+                displayMessage(`Error saving ${type}: ${error.message}`, 'error');
+                throw error;
             }
-            return new Promise((resolve, reject) => {
-                try {
-                    const store = getObjectStore(storeName, 'readwrite');
-                    const request = store.put(data);
-
-                    request.onsuccess = () => {
-                        resolve(`Data with ID '${data.id}' saved successfully in '${storeName}'.`);
-                    };
-
-                    request.onerror = (event) => {
-                        reject(event.target.error);
-                    };
-                } catch (error) {
-                    reject(error);
-                }
-            });
         }
 
         /**
-         * Retrieves an object from the specified store by ID.
-         * @param {string} storeName The name of the object store.
-         * @param {IDBValidKey} id The ID of the data to retrieve.
-         * @returns {Promise<object | undefined>} A promise that resolves with the retrieved data or undefined if not found.
+         * Retrieves data (template or story) from the API.
+         * @param {string} type 'template' or 'story'.
+         * @param {string} [id] Optional ID to retrieve a specific item.
+         * @returns {Promise<object | object[]>} A promise that resolves with the retrieved data.
          */
-        async function getDataFromStore(storeName, id) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const store = getObjectStore(storeName, 'readonly');
-                    const request = store.get(id);
-
-                    request.onsuccess = () => {
-                        resolve(request.result);
-                    };
-
-                    request.onerror = (event) => {
-                        reject(event.target.error);
-                    };
-                } catch (error) {
-                    reject(error);
-                }
-            });
+        async function getData(type, id = '') {
+            // const url = id ? `${GET_DATA_ENDPOINT}?type=${type}&id=${id}` : `${GET_DATA_ENDPOINT}?type=${type}`;
+            // try {
+            //     const response = await fetch(url);
+            //     if (!response.ok) {
+            //         const errorData = await response.json();
+            //         throw new Error(errorData.message || `API error: ${response.status}`);
+            //     }
+            //     return await response.json();
+            // } catch (error) {
+            //     console.error(`Error fetching ${type} data:`, error);
+            //     displayMessage(`Error fetching ${type} data: ${error.message}`, 'error');
+            //     throw error;
+            // }
         }
 
         /**
-         * Retrieves all objects from the specified store.
-         * @param {string} storeName The name of the object store.
-         * @returns {Promise<object[]>} A promise that resolves with an array of all objects.
+         * Clears data of a specific type from the API.
+         * @param {string} type 'story' (or 'template' if your API supports clearing all templates).
+         * @returns {Promise<object>} A promise that resolves with the API response.
          */
-        async function getAllDataFromStore(storeName) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const store = getObjectStore(storeName, 'readonly');
-                    const request = store.getAll();
-
-                    request.onsuccess = () => {
-                        resolve(request.result);
-                    };
-
-                    request.onerror = (event) => {
-                        reject(event.target.error);
-                    };
-                } catch (error) {
-                    reject(error);
+        async function clearData(type) {
+            const url = `${CLEAR_DATA_ENDPOINT}?type=${type}`;
+            try {
+                const response = await fetch(url, {
+                    method: 'DELETE',
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `API error: ${response.status}`);
                 }
-            });
-        }
-
-        /**
-         * Clears all data from the specified object store.
-         * @param {string} storeName The name of the object store.
-         * @returns {Promise<string>} A promise that resolves with a success message or rejects with an error.
-         */
-        async function clearStore(storeName) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const store = getObjectStore(storeName, 'readwrite');
-                    const request = store.clear();
-
-                    request.onsuccess = () => {
-                        resolve(`All data cleared from '${storeName}'.`);
-                    };
-
-                    request.onerror = (event) => {
-                        reject(event.target.error);
-                    };
-                } catch (error) {
-                    reject(error);
-                }
-            });
+                return await response.json();
+            } catch (error) {
+                console.error(`Error clearing ${type} data:`, error);
+                displayMessage(`Error clearing ${type} data: ${error.message}`, 'error');
+                throw error;
+            }
         }
 
         // --- Mad Libs Game Logic ---
@@ -447,11 +439,11 @@
          * Handles saving a new Mad Libs template.
          */
         async function handleSaveTemplate() {
-            const name = templateNameInput.value.trim();
+            const name = TemplateIDInput.value.trim();
             const templateText = templateTextInput.value.trim();
 
             if (!name || !templateText) {
-                displayMessage('Please fill in both template name and text.', 'info');
+                displayMessage('Please fill in both id and text.', 'info');
                 return;
             }
 
@@ -469,18 +461,13 @@
             };
 
             try {
-                await putDataInStore(TEMPLATES_STORE, newTemplate);
+                await saveData('template', newTemplate);
                 displayMessage(`Template '${name}' saved successfully!`, 'success');
-                templateNameInput.value = ''; // Clear form
+                TemplateIDInput.value = ''; // Clear form
                 templateTextInput.value = ''; // Clear form
                 loadTemplatesForPlay(); // Refresh template list
             } catch (error) {
-                if (error.name === 'ConstraintError') {
-                    displayMessage(`Error: A template with this ID already exists.`, 'error');
-                } else {
-                    displayMessage(`Error saving template: ${error.message}`, 'error');
-                }
-                console.error('Error saving template:', error);
+                // Error handled in saveData function
             }
         }
 
@@ -488,17 +475,10 @@
          * Populates the template selection dropdown.
          */
         async function loadTemplatesForPlay() {
-            templateSelect.innerHTML = '<option value="">-- Choose a template --</option>'; // Clear existing options
+            templateSelect.innerHTML = '<option value="">-- Choose a id --</option>'; // Clear existing options
             try {
-                const templates = await getAllDataFromStore(TEMPLATES_STORE);
-                if (templates.length === 0) {
-                    const noTemplatesOption = document.createElement('option');
-                    noTemplatesOption.value = '';
-                    noTemplatesOption.textContent = 'No templates available. Create one!';
-                    noTemplatesOption.disabled = true;
-                    templateSelect.appendChild(noTemplatesOption);
-                    templateSelect.disabled = true;
-                } else {
+                const templates = await getData('template');
+                if (templates && templates.length > 0) {
                     templates.forEach(template => {
                         const option = document.createElement('option');
                         option.value = template.id;
@@ -506,10 +486,17 @@
                         templateSelect.appendChild(option);
                     });
                     templateSelect.disabled = false;
+                } else {
+                    const noTemplatesOption = document.createElement('option');
+                    noTemplatesOption.value = '';
+                    noTemplatesOption.textContent = 'No templates available. Create one!';
+                    noTemplatesOption.disabled = true;
+                    templateSelect.appendChild(noTemplatesOption);
+                    templateSelect.disabled = true;
                 }
             } catch (error) {
-                displayMessage(`Error loading templates: ${error.message}`, 'error');
-                console.error('Error loading templates:', error);
+                // Error handled in getData function
+                templateSelect.disabled = true; // Disable if error
             }
         }
 
@@ -528,7 +515,7 @@
             }
 
             try {
-                const template = await getDataFromStore(TEMPLATES_STORE, selectedTemplateId);
+                const template = await getData('template', selectedTemplateId);
                 if (!template) {
                     displayMessage('Selected template not found.', 'error');
                     return;
@@ -558,8 +545,7 @@
                     generateStoryButton.classList.remove('hidden');
                 }
             } catch (error) {
-                displayMessage(`Error preparing game: ${error.message}`, 'error');
-                console.error('Error preparing game:', error);
+                // Error handled in getData function
             }
         }
 
@@ -569,12 +555,12 @@
         async function handleGenerateStory() {
             const selectedTemplateId = templateSelect.value;
             if (!selectedTemplateId) {
-                displayMessage('Please select a template first.', 'info');
+                displayMessage('Please select a id first.', 'info');
                 return;
             }
 
             try {
-                const template = await getDataFromStore(TEMPLATES_STORE, selectedTemplateId);
+                const template = await getData('template', selectedTemplateId);
                 if (!template) {
                     displayMessage('Selected template not found.', 'error');
                     return;
@@ -607,15 +593,14 @@
                     creationDate: new Date().toISOString()
                 };
 
-                await putDataInStore(STORIES_STORE, newStory);
+                await saveData('story', newStory);
                 displayMessage('Your story has been saved!', 'success');
 
                 // Clear input fields after generating story
                 inputElements.forEach(input => input.value = '');
 
             } catch (error) {
-                displayMessage(`Error generating/saving story: ${error.message}`, 'error');
-                console.error('Error generating/saving story:', error);
+                // Error handled in saveData or getData
             }
         }
 
@@ -625,88 +610,96 @@
         async function loadCompletedStories() {
             completedStoriesList.innerHTML = ''; // Clear previous list
             try {
-                const stories = await getAllDataFromStore(STORIES_STORE);
-                if (stories.length === 0) {
+                const stories = await getData('story');
+                if (stories && stories.length > 0) {
+                    // Fetch template names for each story
+                    const storyPromises = stories.map(async story => {
+                        // Using a try-catch for individual template fetches
+                        try {
+                            const template = await getData('template', story.templateId);
+                            const TemplateID = template ? template.name : 'Unknown Template';
+                            return { ...story, TemplateID };
+                        } catch (templateError) {
+                            console.warn(`Could not fetch template for story ID ${story.templateId}:`, templateError);
+                            return { ...story, TemplateID: 'Unknown Template (Error)' };
+                        }
+                    });
+
+                    const storiesWithNames = await Promise.all(storyPromises);
+
+                    // Sort by creation date, newest first
+                    storiesWithNames.sort((a, b) => new Date(b.creationDate) - new Date(a.creationDate));
+
+                    storiesWithNames.forEach(story => {
+                        const storyDiv = document.createElement('div');
+                        storyDiv.className = 'bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm';
+                        storyDiv.innerHTML = `
+                            <h4 class="font-bold text-blue-800 mb-1">${story.TemplateID}</h4>
+                            <p class="text-xs text-gray-600 mb-2">${new Date(story.creationDate).toLocaleString()}</p>
+                            <pre class="whitespace-pre-wrap text-sm text-gray-900">${story.filledText}</pre>
+                        `;
+                        completedStoriesList.appendChild(storyDiv);
+                    });
+                } else {
                     completedStoriesList.innerHTML = '<p class="text-gray-500 text-center">No stories completed yet. Play a game!</p>';
-                    return;
                 }
-
-                // Fetch template names for each story
-                const storyPromises = stories.map(async story => {
-                    const template = await getDataFromStore(TEMPLATES_STORE, story.templateId);
-                    const templateName = template ? template.name : 'Unknown Template';
-                    return { ...story, templateName };
-                });
-
-                const storiesWithNames = await Promise.all(storyPromises);
-
-                // Sort by creation date, newest first
-                storiesWithNames.sort((a, b) => new Date(b.creationDate) - new Date(a.creationDate));
-
-                storiesWithNames.forEach(story => {
-                    const storyDiv = document.createElement('div');
-                    storyDiv.className = 'bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm';
-                    storyDiv.innerHTML = `
-                        <h4 class="font-bold text-blue-800 mb-1">${story.templateName}</h4>
-                        <p class="text-xs text-gray-600 mb-2">${new Date(story.creationDate).toLocaleString()}</p>
-                        <pre class="whitespace-pre-wrap text-sm text-gray-900">${story.filledText}</pre>
-                    `;
-                    completedStoriesList.appendChild(storyDiv);
-                });
             } catch (error) {
-                displayMessage(`Error loading completed stories: ${error.message}`, 'error');
-                console.error('Error loading completed stories:', error);
+                // Error handled in getData function
+                completedStoriesList.innerHTML = '<p class="text-red-500 text-center">Error loading stories.</p>';
             }
         }
 
         /**
-         * Clears all completed stories from the database.
+         * Clears all completed stories via the API.
          */
         async function handleClearStories() {
-            if (confirm("Are you sure you want to delete all completed stories? This cannot be undone.")) {
+            const confirmed = await showConfirmationModal("Are you sure you want to delete all completed stories? This cannot be undone.");
+            if (confirmed) {
                 try {
-                    await clearStore(STORIES_STORE);
+                    await clearData('story');
                     displayMessage('All completed stories cleared!', 'success');
                     loadCompletedStories(); // Refresh the list
                 } catch (error) {
-                    displayMessage(`Error clearing stories: ${error.message}`, 'error');
-                    console.error('Error clearing stories:', error);
+                    // Error handled in clearData function
                 }
             }
         }
 
         // --- Initial Setup and Event Listeners ---
-        window.onload = () => {
-            initDB().then(() => {
+        window.onload = async () => {
+            // Simulate API readiness check
+            updateApiStatus('Connecting to API...');
+            try {
+                // Make a dummy request to check API connectivity (e.g., get templates)
+                await getData('template');
+                updateApiStatus('API Connected', 'success');
+                displayMessage('API is ready!', 'success');
+
                 // Initialize active tab and content
                 showSection(sectionCreate, tabCreate);
                 loadTemplatesForPlay(); // Load templates for the play section
                 loadCompletedStories(); // Load stories for the view section
-            }).catch(error => {
-                updateDbStatus(`Failed to initialize database: ${error.message}`);
-                console.error("Initialization failed:", error);
-                displayMessage(`Initialization failed: ${error.message}`, 'error');
-            });
+            } catch (error) {
+                updateApiStatus(`API Connection Failed: ${error.message}`, 'error');
+                console.error("API Initialization failed:", error);
+                displayMessage(`API Initialization failed: ${error.message}. Please ensure the backend is running.`, 'error');
+            }
 
             // Tab Navigation Event Listeners
             tabCreate.addEventListener('click', () => showSection(sectionCreate, tabCreate));
             tabPlay.addEventListener('click', () => {
                 showSection(sectionPlay, tabPlay);
-                loadTemplatesForPlay(); // Ensure templates are fresh when playing
+                loadTemplatesForPlay(); // Ensure templates are fresh when switching to play
             });
             tabView.addEventListener('click', () => {
                 showSection(sectionView, tabView);
-                loadCompletedStories(); // Ensure stories are fresh when viewing
+                loadCompletedStories(); // Ensure stories are fresh when switching to view
             });
 
-            // Create Template Section Listeners
+            // Button Event Listeners
             saveTemplateButton.addEventListener('click', handleSaveTemplate);
-
-            // Play Mad Libs Section Listeners
             templateSelect.addEventListener('change', handleTemplateSelectChange);
             generateStoryButton.addEventListener('click', handleGenerateStory);
-
-            // View Stories Section Listeners
             clearStoriesButton.addEventListener('click', handleClearStories);
         };
     </script>

@@ -29,7 +29,9 @@ class madlibs(models.Model):
         return self.id
 
 class madlibs_user_history(models.Model):
-    user_id = models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True)
+    likes = models.IntegerField(default=0)
+    dislikes = models.IntegerField(default=0)
     paragraph_id = models.IntegerField()
     user_name = models.CharField(max_length=255) 
     noun = JSONField(
