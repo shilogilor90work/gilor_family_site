@@ -1,5 +1,6 @@
 const API_BASE_URL = 'http://127.0.0.1:8000/amitai';
 const CREATE_DATA_ENDPOINT = `${API_BASE_URL}/create_finished_data`;
+const GET_RANDOM_TEMPLATE = `${API_BASE_URL}/get_random_template`;
 
 
 async function saveData(type, data) {
@@ -22,6 +23,62 @@ async function saveData(type, data) {
     } catch (error) {
         console.error(`Error saving ${type}:`, error);
         displayMessage(`Error saving ${type}: ${error.message}`, 'error');
+        throw error;
+    }
+}
+
+// async function get_random_template(data, type) {
+//     try {
+//         console.log("starting get_random_template");
+//         // Construct query string parameters
+//         const queryParams = new URLSearchParams({ type, data: JSON.stringify(data) }).toString();
+//         const url = `${GET_RANDOM_TEMPLATE}?${queryParams}`;
+
+//         const response = await fetch(url, {
+//             method: 'GET',
+//             headers: {
+//                 'Content-Type': 'application/json',
+//             },
+//         });
+
+//         if (!response.ok) {
+//             const errorData = await response.json();
+//             console.log("end get_random_template");
+//             throw new Error(errorData.message || `API error: ${response.status}`);
+//         }
+//         return await response.json();
+//     } catch (error) {
+//         console.error(`Error fetching random template for ${type}:`, error);
+//         displayMessage(`Error fetching random template for ${type}: ${error.message}`, 'error');
+//         throw error;
+//     }
+// }
+
+async function get_random_template(type) { // Removed 'data' from parameters
+    try {
+        console.log("starting get_random_template");
+        // Construct query string parameters with only 'type'
+        const queryParams = new URLSearchParams({ type }).toString(); // Removed 'data'
+        const url = `${GET_RANDOM_TEMPLATE}?${queryParams}`;
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        console.log(response);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.log("end get_random_template");
+            throw new Error(errorData.message || `API error: ${response.status}`);
+        }
+        console.log("done");
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching random template for ${type}:`, error);
+        displayMessage(`Error fetching random template for ${type}: ${error.message}`, 'error');
         throw error;
     }
 }
@@ -60,7 +117,10 @@ I would ${adj4} to go there again.`;
             });
             console.log("called function");
 
+
         } else {
+            const result= get_random_template("paragraph");
+            console.log(result);
             madLibsStoryOutput.textContent = "Please fill in all the blanks to generate the story!";
         }
     });

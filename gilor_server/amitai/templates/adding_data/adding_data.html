@@ -58,7 +58,7 @@
 
     <div class="bg-white p-6 rounded-lg container-shadow w-full max-w-2xl">
         <h1 class="text-4xl font-extrabold text-gray-900 mb-6 text-center">
-            Mad Libs Fun!
+            madlibs data managment
         </h1>
 
         <div class="mb-4 text-center">
@@ -125,10 +125,7 @@
                     <option value="">-- Choose a template --</option>
                 </select>
             </div>
-            <div id="wordInputsContainer" class="space-y-3 p-4 bg-gray-50 rounded-lg hidden">
-                <h3 class="text-lg font-semibold text-gray-800">Fill in the Blanks:</h3>
-                <!-- Dynamic word input fields will be inserted here -->
-            </div>
+
             <button
                 id="generateStoryButton"
                 class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-md shadow-lg transition duration-200 ease-in-out transform hover:scale-105 hidden"
@@ -161,7 +158,7 @@
         </div>
 
         <p class="text-xs text-gray-500 mt-6 text-center">
-            Mad Libs game powered by a custom API.
+            Developed by Amitai and Shilo Gilor.
         </p>
     </div>
 
@@ -218,7 +215,7 @@
         const generatedStoryContent = document.getElementById('generatedStoryContent');
 
         // View Stories Section Elements
-        const completedStoriesList = document.getElementById('completedStoriesList');
+        const completedStoriesList = document.getElementById('madlibs_user_history');
         const clearStoriesButton = document.getElementById('clearStoriesButton');
 
         // Confirmation Modal Elements
@@ -608,10 +605,10 @@
          * Displays all completed stories.
          */
         async function loadCompletedStories() {
-            completedStoriesList.innerHTML = ''; // Clear previous list
+
             try {
-                const stories = await getData('story');
-                if (stories && stories.length > 0) {
+                const stories = await getData('madlibs_user_history');
+                if (stories.length > 0) {
                     // Fetch template names for each story
                     const storyPromises = stories.map(async story => {
                         // Using a try-catch for individual template fetches

@@ -10,7 +10,7 @@ from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
 from .models import madlibs
 from .models import GameRecord
-
+import random
 def api_home(request):
     return JsonResponse({"message": "Welcome to the API"})
 
@@ -362,3 +362,23 @@ class MadlibsViewSet(viewsets.ModelViewSet):
     serializer_class = MadlibsSerializer
     authentication_classes = [] # Set to an empty list to disable authentication
     permission_classes = [AllowAny] # Allow any user to access this view
+
+def get_random_template(request):
+    """
+    API endpoint to get a random madlib template.
+    """
+    if request.method == 'GET':
+        try:
+            # Fetch all madlibs records
+            templates = list(madlibs.objects.all())
+            if not templates:
+                return JsonResponse({'status': 'error', 'message': 'No templates available'}, status=404)
+
+            # Select a random template
+            random_template = random.choice(templates)
+            serializer = MadlibsSerializer(random_template)
+            return JsonResponse(serializer.data, safe=False)  # Return the serialized data
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only GET requests are allowed'}, status=405)
