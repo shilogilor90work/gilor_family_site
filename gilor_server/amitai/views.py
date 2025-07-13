@@ -11,6 +11,7 @@ from rest_framework.permissions import AllowAny
 from .models import madlibs
 from .models import GameRecord
 import random
+from .models import madlibs_user_history
 def api_home(request):
     return JsonResponse({"message": "Welcome to the API"})
 
@@ -204,7 +205,7 @@ def create_data(request):
     else:
         return JsonResponse({'status': 'error', 'message': 'Only POST requests are allowed'}, status=405)
         
-def read_data(request):
+def get_all_templates(request):
     """
     API endpoint to read all madlibs data.
     """
@@ -218,66 +219,68 @@ def read_data(request):
     else:
         return JsonResponse({'status': 'error', 'message': 'Only GET requests are allowed'}, status=405)
     
-# def delete_data(request, id):
-#     """
-#     API endpoint to delete a specific madlib by ID.
-#     """
-#     if request.method == 'DELETE':
-#         try:
-#             # Fetch the madlib record by ID
-#             try:
-#                 madlib = madlibs.objects.get(id=id)
-#             except madlibs.DoesNotExist:
-#                 return JsonResponse({'status': 'error', 'message': 'Madlib not found'}, status=404)
+def delete_data(request, id):
+    """
+    API endpoint to delete a specific madlib by ID.
+    """
+    if request.method == 'DELETE':
+        try:
+            # Fetch the madlib record by ID
+            try:
+                madlib = madlibs.objects.get(id=id)
+            except madlibs.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Madlib not found'}, status=404)
 
-#             # Delete the record
-#             madlib.delete()
-#             return JsonResponse({'status': 'success', 'message': 'Madlib deleted successfully'})
-#         except Exception as e:
-#             return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
-#     else:
-#         return JsonResponse({'status': 'error', 'message': 'Only DELETE requests are allowed'}, status=405)
+            # Delete the record
+            madlib.delete()
+            return JsonResponse({'status': 'success', 'message': 'Madlib deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only DELETE requests are allowed'}, status=405)
 
-# def update_data(request, id):
-#     """
-#     API endpoint to update a specific madlib by ID.
-#     """
-#     if request.method == 'PUT':
-#         try:
-#             data = json.loads(request.body)
-#             # Fetch the madlib record by ID
-#             try:
-#                 madlib = madlibs.objects.get(id=id)
-#             except madlibs.DoesNotExist:
-#                 return JsonResponse({'status': 'error', 'message': 'Madlib not found'}, status=404)
+def update_data(request, id):
+    """
+    API endpoint to update a specific madlib by ID.
+    """
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            # Fetch the madlib record by ID
+            try:
+                madlib = madlibs.objects.get(id=id)
+            except madlibs.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Madlib not found'}, status=404)
 
-#             # Update fields if provided in the request
-#             if 'paragraph' in data:
-#                 madlib.paragraph = data['paragraph']
-#             if 'noun' in data:
-#                 madlib.noun = data['noun']
-#             if 'adjective' in data:
-#                 madlib.adjective = data['adjective']
-#             if 'verb' in data:
-#                 madlib.verb = data['verb']
-#             if 'funny_word' in data:
-#                 madlib.funny_word = data['funny_word']
-#             if 'funny_name' in data:
-#                 madlib.funny_name = data['funny_name']
-#             if 'likes' in data:
-#                 madlib.likes = data['likes']
-#             if 'dislikes' in data:
-#                 madlib.dislikes = data['dislikes']
+            # Update fields if provided in the request
+            if 'paragraph' in data:
+                madlib.paragraph = data['paragraph']
+            if 'noun' in data:
+                madlib.noun = data['noun']
+            if 'adjective' in data:
+                madlib.adjective = data['adjective']
+            if 'verb' in data:
+                madlib.verb = data['verb']
+            if 'funny_word' in data:
+                madlib.funny_word = data['funny_word']
+            if 'funny_name' in data:
+                madlib.funny_name = data['funny_name']
+            if 'likes' in data:
+                madlib.likes = data['likes']
+            if 'dislikes' in data:
+                madlib.dislikes = data['dislikes']
 
-#             # Save the updated record
-#             madlib.save()
-#             return JsonResponse({'status': 'success', 'message': 'Madlib updated successfully'})
-#         except json.JSONDecodeError:
-#             return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
-#         except Exception as e:
-#             return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
-#     else:
-#         return JsonResponse({'status': 'error', 'message': 'Only PUT requests are allowed'}, status=405)
+            # Save the updated record
+            madlib.save()
+            return JsonResponse({'status': 'success', 'message': 'Madlib updated successfully'})
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only PUT requests are allowed'}, status=405)
+
+
 @csrf_exempt # WARNING: Use proper CSRF protection in production!
 def create_finished_data(request):
     """
@@ -321,7 +324,7 @@ def create_finished_data(request):
     else:
         return JsonResponse({'status': 'error', 'message': 'Only POST requests are allowed'}, status=405)
 
-def read_finished_data(request):
+def get_finished_data(request):
     """
     API endpoint to read all finished madlibs data.
     """
@@ -377,6 +380,25 @@ def get_random_template(request):
             # Select a random template
             random_template = random.choice(templates)
             serializer = MadlibsSerializer(random_template)
+            return JsonResponse(serializer.data, safe=False)  # Return the serialized data
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only GET requests are allowed'}, status=405)
+
+def get_finished_template_by_id(request, id):
+    """
+    API endpoint to get a finished madlib template by ID.
+    """
+    if request.method == 'GET':
+        try:
+            # Fetch the finished madlib record by ID
+            try:
+                finished_template = madlibs_user_history.objects.get(id=id)
+            except madlibs_user_history.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Finished template not found'}, status=404)
+
+            serializer = MadlibsSerializer(finished_template)
             return JsonResponse(serializer.data, safe=False)  # Return the serialized data
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)

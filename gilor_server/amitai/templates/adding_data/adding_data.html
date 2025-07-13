@@ -72,7 +72,7 @@
                 Create Template
             </button>
             <button id="tab-play" class="flex-1 py-3 px-4 text-center text-sm font-medium transition-colors duration-200 ease-in-out border-b-2 border-transparent hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
-                Play Mad Libs
+                update Template
             </button>
             <button id="tab-view" class="flex-1 py-3 px-4 text-center text-sm font-medium transition-colors duration-200 ease-in-out border-b-2 border-transparent hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
                 View Stories
@@ -84,7 +84,7 @@
             <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Create New Template</h2>
             <div>
                 <label for="TemplateID" class="block text-sm font-medium text-gray-700 mb-1">
-                    Template ID:
+                    Template ID: (Unique identifier for the template)
                 </label>
                 <input
                     type="integer"
@@ -113,7 +113,7 @@
         </div>
 
         <div id="section-play" class="content-section hidden space-y-4">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Play Mad Libs</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">update a template</h2>
             <div>
                 <label for="templateSelect" class="block text-sm font-medium text-gray-700 mb-1">
                     Select a template:
@@ -148,7 +148,7 @@
                 id="clearStoriesButton"
                 class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-4 rounded-md shadow-lg transition duration-200 ease-in-out transform hover:scale-105"
             >
-                Clear All Stories
+                Clear All Story Templates
             </button>
         </div>
 
@@ -182,7 +182,7 @@
         // === API Configuration ===
         const API_BASE_URL = 'http://127.0.0.1:8000/amitai';
         const CREATE_DATA_ENDPOINT = `${API_BASE_URL}/create_data`;
-        // const GET_DATA_ENDPOINT = `${API_BASE_URL}/get_data`; // Assumed endpoint for GET requests
+        const GET_DATA_ENDPOINT = `${API_BASE_URL}/get_all_templates`; // Assumed endpoint for GET requests
         const CLEAR_DATA_ENDPOINT = `${API_BASE_URL}/delete_all_data`; // Assumed endpoint for DELETE requests
         // =========================
 
@@ -362,19 +362,19 @@
          * @returns {Promise<object | object[]>} A promise that resolves with the retrieved data.
          */
         async function getData(type, id = '') {
-            // const url = id ? `${GET_DATA_ENDPOINT}?type=${type}&id=${id}` : `${GET_DATA_ENDPOINT}?type=${type}`;
-            // try {
-            //     const response = await fetch(url);
-            //     if (!response.ok) {
-            //         const errorData = await response.json();
-            //         throw new Error(errorData.message || `API error: ${response.status}`);
-            //     }
-            //     return await response.json();
-            // } catch (error) {
-            //     console.error(`Error fetching ${type} data:`, error);
-            //     displayMessage(`Error fetching ${type} data: ${error.message}`, 'error');
-            //     throw error;
-            // }
+            const url = id ? `${GET_DATA_ENDPOINT}?type=${type}&id=${id}` : `${GET_DATA_ENDPOINT}?type=${type}`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `API error: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error(`Error fetching ${type} data:`, error);
+                displayMessage(`Error fetching ${type} data: ${error.message}`, 'error');
+                throw error;
+            }
         }
 
         /**
@@ -435,11 +435,43 @@
         /**
          * Handles saving a new Mad Libs template.
          */
+
+        async function loadTemplatesForUpdate() {
+            templateSelect.innerHTML = '<option value="">-- Choose a template --</option>'; // Clear existing options
+            try {
+                const templates = await getData('template'); // Assuming this fetches an array of template objects
+                if (templates && templates.length > 0) {
+                    templates.forEach(template => {
+                    const option = document.createElement('option');
+                    option.value = template.id;
+
+                    // --- THE MODIFIED FIX IS HERE ---
+                    // Set the text content to be only the template.id
+                    option.textContent = template.id;
+                    // ----------------------------------
+
+                    templateSelect.appendChild(option);
+                });
+                templateSelect.disabled = false;
+            } else {
+                const noTemplatesOption = document.createElement('option');
+                noTemplatesOption.value = '';
+                noTemplatesOption.textContent = 'No templates available. Create one!';
+                noTemplatesOption.disabled = true;
+                templateSelect.appendChild(noTemplatesOption);
+                templateSelect.disabled = true;
+            }
+        } catch (error) {
+            // Error handled in getData function
+            templateSelect.disabled = true; // Disable if error
+            displayMessage('Failed to load templates. Please check API connection.', 'error');
+        }
+    }
+
         async function handleSaveTemplate() {
-            const name = TemplateIDInput.value.trim();
             const templateText = templateTextInput.value.trim();
 
-            if (!name || !templateText) {
+            if (templateText) {
                 displayMessage('Please fill in both id and text.', 'info');
                 return;
             }
@@ -452,50 +484,21 @@
 
             const newTemplate = {
                 id: generateUniqueId(),
-                name: name,
                 templateText: templateText,
                 placeholders: placeholders
             };
 
             try {
                 await saveData('template', newTemplate);
-                displayMessage(`Template '${name}' saved successfully!`, 'success');
+                displayMessage(`Template '${id}' saved successfully!`, 'success');
                 TemplateIDInput.value = ''; // Clear form
                 templateTextInput.value = ''; // Clear form
-                loadTemplatesForPlay(); // Refresh template list
+                loadTemplatesForUpdate(); // Refresh template list
             } catch (error) {
                 // Error handled in saveData function
             }
         }
 
-        /**
-         * Populates the template selection dropdown.
-         */
-        async function loadTemplatesForPlay() {
-            templateSelect.innerHTML = '<option value="">-- Choose a id --</option>'; // Clear existing options
-            try {
-                const templates = await getData('template');
-                if (templates && templates.length > 0) {
-                    templates.forEach(template => {
-                        const option = document.createElement('option');
-                        option.value = template.id;
-                        option.textContent = template.name;
-                        templateSelect.appendChild(option);
-                    });
-                    templateSelect.disabled = false;
-                } else {
-                    const noTemplatesOption = document.createElement('option');
-                    noTemplatesOption.value = '';
-                    noTemplatesOption.textContent = 'No templates available. Create one!';
-                    noTemplatesOption.disabled = true;
-                    templateSelect.appendChild(noTemplatesOption);
-                    templateSelect.disabled = true;
-                }
-            } catch (error) {
-                // Error handled in getData function
-                templateSelect.disabled = true; // Disable if error
-            }
-        }
 
         /**
          * Renders input fields for placeholders when a template is selected.
@@ -605,16 +608,15 @@
          * Displays all completed stories.
          */
         async function loadCompletedStories() {
-
             try {
-                const stories = await getData('madlibs_user_history');
+                const stories = await getData('madlibs');
                 if (stories.length > 0) {
                     // Fetch template names for each story
                     const storyPromises = stories.map(async story => {
                         // Using a try-catch for individual template fetches
                         try {
                             const template = await getData('template', story.templateId);
-                            const TemplateID = template ? template.name : 'Unknown Template';
+                            const TemplateID = template ? template.id : 'Unknown Template';
                             return { ...story, TemplateID };
                         } catch (templateError) {
                             console.warn(`Could not fetch template for story ID ${story.templateId}:`, templateError);
@@ -650,7 +652,7 @@
          * Clears all completed stories via the API.
          */
         async function handleClearStories() {
-            const confirmed = await showConfirmationModal("Are you sure you want to delete all completed stories? This cannot be undone.");
+            const confirmed = await showConfirmationModal("Are you sure you want to delete all templates for storys? This cannot be undone.");
             if (confirmed) {
                 try {
                     await clearData('story');
@@ -674,7 +676,7 @@
 
                 // Initialize active tab and content
                 showSection(sectionCreate, tabCreate);
-                loadTemplatesForPlay(); // Load templates for the play section
+                loadTemplatesForUpdate(); // Load templates for the play section
                 loadCompletedStories(); // Load stories for the view section
             } catch (error) {
                 updateApiStatus(`API Connection Failed: ${error.message}`, 'error');
@@ -686,7 +688,7 @@
             tabCreate.addEventListener('click', () => showSection(sectionCreate, tabCreate));
             tabPlay.addEventListener('click', () => {
                 showSection(sectionPlay, tabPlay);
-                loadTemplatesForPlay(); // Ensure templates are fresh when switching to play
+                loadTemplatesForUpdate(); // Ensure templates are fresh when switching to play
             });
             tabView.addEventListener('click', () => {
                 showSection(sectionView, tabView);

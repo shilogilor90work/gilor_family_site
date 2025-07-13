@@ -1,4 +1,4 @@
-{% load static %}
+<!-- {% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,6 +33,35 @@
 
             <button id="generateStory">Generate Story</button>
         </div>
+
+        <div class="story-output">
+            <h2>Your Mad Libs Story:</h2>
+            <p id="madLibsStory"></p>
+        </div>
+    </div>
+
+    <script src="{% static 'madlibs_game.js' %}"></script>
+</body>
+</html> -->
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mad Libs Game</title>
+    <link rel="stylesheet" href="{% static 'madlibs_game.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to the Mad Libs Game!</h1>
+        <p>In this game, I will ask for a few words in order to fill in a paragraph.</p>
+
+        <div class="input-section" id="inputSection">
+            </div>
+        <button id="newTemplateButton">Get New Template</button> 
+        <button id="generateStory">Generate Story</button>
 
         <div class="story-output">
             <h2>Your Mad Libs Story:</h2>
