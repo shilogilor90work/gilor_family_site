@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRUD Madlibs with API</title>
-    <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for the Inter font and basic body setup */
@@ -66,7 +65,6 @@
             <p id="api-status" class="text-md font-semibold text-blue-600">Initializing...</p>
         </div>
 
-        <!-- Navigation Tabs -->
         <div class="flex border-b border-gray-200 mb-6">
             <button id="tab-create" class="flex-1 py-3 px-4 text-center text-sm font-medium transition-colors duration-200 ease-in-out border-b-2 border-transparent hover:bg-gray-50 focus:outline-none focus:bg-gray-50 active-tab">
                 Create Template
@@ -79,20 +77,8 @@
             </button>
         </div>
 
-        <!-- Content Sections -->
         <div id="section-create" class="content-section space-y-4">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Create New Template</h2>
-            <div>
-                <label for="TemplateID" class="block text-sm font-medium text-gray-700 mb-1">
-                    Template ID: (Unique identifier for the template)
-                </label>
-                <input
-                    type="integer"
-                    id="TemplateID"
-                    placeholder="e.g., '34294'"
-                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-            </div>
             <div>
                 <label for="templateText" class="block text-sm font-medium text-gray-700 mb-1">
                     Template Text: (Use [WORD_TYPE] for blanks, e.g., "The [ADJECTIVE] [NOUN] went [VERB]...")
@@ -141,7 +127,6 @@
         <div id="section-view" class="content-section hidden space-y-4">
             <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Completed Stories</h2>
             <div id="completedStoriesList" class="space-y-4">
-                <!-- Completed stories will be loaded here -->
                 <p class="text-gray-500 text-center">No stories completed yet. Play a game!</p>
             </div>
             <button
@@ -152,17 +137,14 @@
             </button>
         </div>
 
-        <!-- Common Message Display -->
         <div id="message-display" class="hidden bg-blue-100 text-blue-800 p-3 rounded-md mt-6 border border-blue-200">
-            <!-- Messages will be displayed here -->
-        </div>
+            </div>
 
         <p class="text-xs text-gray-500 mt-6 text-center">
             Developed by Amitai and Shilo Gilor.
         </p>
     </div>
 
-    <!-- Custom Confirmation Modal -->
     <div id="confirmationModal" class="modal-overlay hidden">
         <div class="modal-content">
             <h3 id="modalMessage" class="text-xl font-semibold text-gray-900 mb-4"></h3>
@@ -203,7 +185,6 @@
         const tabButtons = [tabCreate, tabPlay, tabView];
 
         // Create Template Section Elements
-        const TemplateIDInput = document.getElementById('TemplateID');
         const templateTextInput = document.getElementById('templateText');
         const saveTemplateButton = document.getElementById('saveTemplateButton');
 
@@ -215,7 +196,7 @@
         const generatedStoryContent = document.getElementById('generatedStoryContent');
 
         // View Stories Section Elements
-        const completedStoriesList = document.getElementById('madlibs_user_history');
+        const completedStoriesList = document.getElementById('completedStoriesList');
         const clearStoriesButton = document.getElementById('clearStoriesButton');
 
         // Confirmation Modal Elements
@@ -435,7 +416,81 @@
         /**
          * Handles saving a new Mad Libs template.
          */
+        async function handleTemplateUpdate() {
+            const selectedTemplateId = templateSelect.value;
+            if (!selectedTemplateId) {
+                displayMessage('Please select a template to edit.', 'info');
+                return;
+            }
 
+            try {
+                const template = await getData('template', selectedTemplateId);
+                if (!template) {
+                    displayMessage('Selected template not found.', 'error');
+                    return;
+                }
+
+                // Display the template text in a modal for editing
+                const editModal = document.createElement('div');
+                editModal.className = 'modal-overlay';
+                editModal.innerHTML = `
+                    <div class="modal-content">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-4">Edit Template</h3>
+                        <textarea
+                            id="editTemplateText"
+                            rows="6"
+                            class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                        >${template.templateText}</textarea>
+                        <div class="flex justify-center space-x-4 mt-4">
+                            <button id="saveEditedTemplateBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-200 ease-in-out">
+                                Save Changes
+                            </button>
+                            <button id="cancelEditTemplateBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md shadow-md transition duration-200 ease-in-out">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(editModal);
+
+                const saveEditedTemplateBtn = document.getElementById('saveEditedTemplateBtn');
+                const cancelEditTemplateBtn = document.getElementById('cancelEditTemplateBtn');
+                const editTemplateText = document.getElementById('editTemplateText');
+
+                const handleSaveChanges = async () => {
+                    const updatedTemplateText = editTemplateText.value.trim();
+                    if (!updatedTemplateText) {
+                        displayMessage('Template text cannot be empty.', 'error');
+                        return;
+                    }
+
+                    const updatedPlaceholders = extractPlaceholders(updatedTemplateText);
+                    const updatedTemplate = {
+                        id: selectedTemplateId,
+                        templateText: updatedTemplateText,
+                        placeholders: updatedPlaceholders,
+                    };
+
+                    try {
+                        await saveData('template', updatedTemplate);
+                        displayMessage(`Template '${selectedTemplateId}' updated successfully!`, 'success');
+                        loadTemplatesForUpdate(); // Refresh template list
+                        editModal.remove(); // Close the modal
+                    } catch (error) {
+                        // Error handled in saveData function
+                    }
+                };
+
+                const handleCancelEdit = () => {
+                    editModal.remove(); // Close the modal
+                };
+
+                saveEditedTemplateBtn.addEventListener('click', handleSaveChanges);
+                cancelEditTemplateBtn.addEventListener('click', handleCancelEdit);
+            } catch (error) {
+                // Error handled in getData function
+            }
+        }
         async function loadTemplatesForUpdate() {
             templateSelect.innerHTML = '<option value="">-- Choose a template --</option>'; // Clear existing options
             try {
@@ -444,12 +499,7 @@
                     templates.forEach(template => {
                     const option = document.createElement('option');
                     option.value = template.id;
-
-                    // --- THE MODIFIED FIX IS HERE ---
-                    // Set the text content to be only the template.id
                     option.textContent = template.id;
-                    // ----------------------------------
-
                     templateSelect.appendChild(option);
                 });
                 templateSelect.disabled = false;
@@ -466,13 +516,14 @@
             templateSelect.disabled = true; // Disable if error
             displayMessage('Failed to load templates. Please check API connection.', 'error');
         }
+
     }
 
         async function handleSaveTemplate() {
             const templateText = templateTextInput.value.trim();
 
-            if (templateText) {
-                displayMessage('Please fill in both id and text.', 'info');
+            if (!templateText) { // Corrected condition: check if templateText is empty
+                displayMessage('Please enter template text.', 'info');
                 return;
             }
 
@@ -483,15 +534,14 @@
             }
 
             const newTemplate = {
-                id: generateUniqueId(),
+                id: generateUniqueId(), // ID is now automatically generated
                 templateText: templateText,
                 placeholders: placeholders
             };
 
             try {
                 await saveData('template', newTemplate);
-                displayMessage(`Template '${id}' saved successfully!`, 'success');
-                TemplateIDInput.value = ''; // Clear form
+                displayMessage(`Template saved successfully with ID: ${newTemplate.id}!`, 'success'); // Display the generated ID
                 templateTextInput.value = ''; // Clear form
                 loadTemplatesForUpdate(); // Refresh template list
             } catch (error) {
@@ -629,78 +679,167 @@
                     // Sort by creation date, newest first
                     storiesWithNames.sort((a, b) => new Date(b.creationDate) - new Date(a.creationDate));
 
+                    completedStoriesList.innerHTML = ''; // Clear previous content
                     storiesWithNames.forEach(story => {
-                        const storyDiv = document.createElement('div');
-                        storyDiv.className = 'bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm';
-                        storyDiv.innerHTML = `
-                            <h4 class="font-bold text-blue-800 mb-1">${story.TemplateID}</h4>
-                            <p class="text-xs text-gray-600 mb-2">${new Date(story.creationDate).toLocaleString()}</p>
-                            <pre class="whitespace-pre-wrap text-sm text-gray-900">${story.filledText}</pre>
-                        `;
-                        completedStoriesList.appendChild(storyDiv);
+                        const storyCard = document.createElement('div');
+                        storyCard.className = 'bg-gray-50 p-4 rounded-md border border-gray-200 shadow-sm';
+                        storyCard.innerHTML = `
+                            <p class="text-sm text-gray-500 mb-1">Template: <span class="font-semibold text-gray-700">${story.TemplateID}</span></p>
+                            <p class="text-sm text-gray-500 mb-2">Completed On: <span class="font-semibold text-gray-700">${new Date(story.creationDate).toLocaleString()}</span></p>
+                            <p class="text-gray-800 whitespace-pre-wrap mb-4">${story.filledText}</p>
+                            <div class="flex space-x-2">
+                                <button class="like-button bg-blue-500 hover:bg-blue-600 text-white text-sm py-1 px-3 rounded-md transition duration-200 ease-in-out">
+                                    👍 Like
+                                </button>
+                                <button class="dislike-button bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-3 rounded-md transition duration-200 ease-in-out">
+                                    👎 Dislike
+                                </button>
+                            </div>
+                            `;
+                        completedStoriesList.appendChild(storyCard);
+
+                        // Optional: Add event listeners if you want to handle clicks (e.g., send to API)
+                        // To make these buttons functional, you'll need to:
+                        // 1. Uncomment the following lines.
+                        // 2. Create corresponding API endpoints on your backend (e.g., /amitai/like_story/<story_id>).
+                        // 3. Implement the fetch calls to those API endpoints.
+                        // storyCard.querySelector('.like-button').addEventListener('click', () => {
+                        //     console.log('Liked story:', story.id);
+                        //     // fetch('/api/like_story/' + story.id, { method: 'POST' })
+                        // });
+                        // storyCard.querySelector('.dislike-button').addEventListener('click', () => {
+                        //     console.log('Disliked story:', story.id);
+                        //     // fetch('/api/dislike_story/' + story.id, { method: 'POST' })
+                        // });
                     });
                 } else {
                     completedStoriesList.innerHTML = '<p class="text-gray-500 text-center">No stories completed yet. Play a game!</p>';
                 }
             } catch (error) {
                 // Error handled in getData function
-                completedStoriesList.innerHTML = '<p class="text-red-500 text-center">Error loading stories.</p>';
+                completedStoriesList.innerHTML = '<p class="text-red-500 text-center">Failed to load stories. Please check API connection.</p>';
             }
         }
 
         /**
-         * Clears all completed stories via the API.
+         * Clears all completed stories after confirmation.
          */
         async function handleClearStories() {
-            const confirmed = await showConfirmationModal("Are you sure you want to delete all templates for storys? This cannot be undone.");
+            const confirmed = await showConfirmationModal('Are you sure you want to delete all completed stories? This action cannot be undone.');
             if (confirmed) {
                 try {
-                    await clearData('story');
+                    await clearData('story'); // Assuming 'story' is the correct type to clear user-generated stories
                     displayMessage('All completed stories cleared!', 'success');
                     loadCompletedStories(); // Refresh the list
                 } catch (error) {
                     // Error handled in clearData function
                 }
+            } else {
+                displayMessage('Clearing stories cancelled.', 'info');
             }
         }
 
-        // --- Initial Setup and Event Listeners ---
-        window.onload = async () => {
-            // Simulate API readiness check
-            updateApiStatus('Connecting to API...');
-            try {
-                // Make a dummy request to check API connectivity (e.g., get templates)
-                await getData('template');
-                updateApiStatus('API Connected', 'success');
-                displayMessage('API is ready!', 'success');
-
-                // Initialize active tab and content
-                showSection(sectionCreate, tabCreate);
-                loadTemplatesForUpdate(); // Load templates for the play section
-                loadCompletedStories(); // Load stories for the view section
-            } catch (error) {
-                updateApiStatus(`API Connection Failed: ${error.message}`, 'error');
-                console.error("API Initialization failed:", error);
-                displayMessage(`API Initialization failed: ${error.message}. Please ensure the backend is running.`, 'error');
+        /**
+         * Clears all templates after confirmation.
+         */
+        async function handleClearTemplates() {
+            const confirmed = await showConfirmationModal('Are you sure you want to delete all templates? This action cannot be undone.');
+            if (confirmed) {
+                try {
+                    await clearData('template'); // Assuming 'template' is the correct type to clear templates
+                    displayMessage('All templates cleared!', 'success');
+                    loadTemplatesForUpdate(); // Refresh the template selection dropdown
+                    loadCompletedStories(); // Refresh stories as their templates might be gone
+                } catch (error) {
+                    // Error handled in clearData function
+                }
+            } else {
+                displayMessage('Clearing templates cancelled.', 'info');
             }
+        }
 
-            // Tab Navigation Event Listeners
+        // --- Initializations and Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check API status on load (basic check)
+            fetch(API_BASE_URL)
+                .then(response => {
+                    if (response.ok) {
+                        updateApiStatus('API Connected', 'success');
+                    } else {
+                        updateApiStatus(`API Error: ${response.status}`, 'error');
+                    }
+                })
+                .catch(() => {
+                    updateApiStatus('API Offline', 'error');
+                });
+
+            // Set initial active tab
+            showSection(sectionCreate, tabCreate);
+            loadTemplatesForUpdate(); // Load templates for update/play section on initial load
+            loadCompletedStories(); // Load stories for view section on initial load
+
+            // Tab Navigation
             tabCreate.addEventListener('click', () => showSection(sectionCreate, tabCreate));
             tabPlay.addEventListener('click', () => {
                 showSection(sectionPlay, tabPlay);
-                loadTemplatesForUpdate(); // Ensure templates are fresh when switching to play
+                loadTemplatesForUpdate(); // Ensure templates are fresh when entering "Play" tab
             });
             tabView.addEventListener('click', () => {
                 showSection(sectionView, tabView);
-                loadCompletedStories(); // Ensure stories are fresh when switching to view
+                loadCompletedStories(); // Ensure stories are fresh when entering "View" tab
             });
 
-            // Button Event Listeners
+            // Create Template Events
             saveTemplateButton.addEventListener('click', handleSaveTemplate);
+
+            // Play Mad Libs Events
             templateSelect.addEventListener('change', handleTemplateSelectChange);
             generateStoryButton.addEventListener('click', handleGenerateStory);
-            clearStoriesButton.addEventListener('click', handleClearStories);
-        };
+
+            // View Stories Events
+            clearStoriesButton.addEventListener('click', () => {
+                showConfirmationModal('Are you sure you want to delete all completed stories?').then(confirmed => {
+                    if (confirmed) {
+                        handleClearData('story'); // Call a generic clear data handler for stories
+                    }
+                });
+            });
+
+            // Note: The original 'Clear All Story Templates' button was tied to 'clearStoriesButton'.
+            // If you want to clear *templates*, you'd need a separate button and handler for that.
+            // For now, it will clear 'story' type data.
+            // To clear all templates, you'd need to create a new button and call:
+            // clearTemplatesButton.addEventListener('click', () => {
+            //    handleClearData('template'); // Assuming 'template' is the correct type for templates
+            // });
+
+            // Unified clear data handler (can be used for both stories and templates)
+            async function handleClearData(typeToClear) {
+                try {
+                    await clearData(typeToClear);
+                    displayMessage(`All ${typeToClear}s cleared!`, 'success');
+                    if (typeToClear === 'story') {
+                        loadCompletedStories();
+                    } else if (typeToClear === 'template') {
+                        loadTemplatesForUpdate();
+                        // Potentially also refresh other sections that depend on templates/stories
+                        loadCompletedStories(); // As stories depend on templates
+                    }
+                } catch (error) {
+                    // Error already handled in clearData
+                }
+            }
+
+            // Bind the clearStoriesButton to clear 'story' data
+            clearStoriesButton.addEventListener('click', () => {
+                showConfirmationModal('Are you sure you want to delete all completed stories? This action cannot be undone.').then(confirmed => {
+                    if (confirmed) {
+                        handleClearData('story');
+                    }
+                });
+            });
+        });
+
     </script>
 </body>
 </html>
