@@ -404,3 +404,51 @@ def get_finished_template_by_id(request, id):
             return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
     else:
         return JsonResponse({'status': 'error', 'message': 'Only GET requests are allowed'}, status=405)
+@csrf_exempt
+def like_template(request, id):
+    """
+    API endpoint to like a finished madlib template by ID.
+    """
+    print("like_template called with ID:", id)
+    if request.method == 'POST':
+        try:
+            # Fetch the finished madlib record by ID
+            try:
+                print("before template found:", id)
+                finished_template = madlibs.objects.get(id=id)
+                print("after template found:", id)
+            except madlibs.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Finished template not found'}, status=404)
+
+            # Increment likes
+            finished_template.likes += 1
+            finished_template.save()
+
+            return JsonResponse({'status': 'success', 'message': 'Template liked successfully'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only POST requests are allowed'}, status=405)
+
+@csrf_exempt
+def dislike_template(request, id):
+    """
+    API endpoint to dislike a finished madlib template by ID.
+    """
+    if request.method == 'POST':
+        try:
+            # Fetch the finished madlib record by ID
+            try:
+                finished_template = madlibs.objects.get(id=id)
+            except madlibs.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Finished template not found'}, status=404)
+
+            # Increment dislikes
+            finished_template.dislikes += 1
+            finished_template.save()
+
+            return JsonResponse({'status': 'success', 'message': 'Template disliked successfully'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only POST requests are allowed'}, status=405)

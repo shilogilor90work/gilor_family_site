@@ -684,8 +684,7 @@
                         const storyCard = document.createElement('div');
                         storyCard.className = 'bg-gray-50 p-4 rounded-md border border-gray-200 shadow-sm';
                         storyCard.innerHTML = `
-                            <p class="text-sm text-gray-500 mb-1">Template: <span class="font-semibold text-gray-700">${story.TemplateID}</span></p>
-                            <p class="text-sm text-gray-500 mb-2">Completed On: <span class="font-semibold text-gray-700">${new Date(story.creationDate).toLocaleString()}</span></p>
+                            <p class="text-sm text-gray-500 mb-1">Template ID: <span class="font-semibold text-gray-700">${story.id}</span></p>
                             <p class="text-gray-800 whitespace-pre-wrap mb-4">${story.filledText}</p>
                             <div class="flex space-x-2">
                                 <button class="like-button bg-blue-500 hover:bg-blue-600 text-white text-sm py-1 px-3 rounded-md transition duration-200 ease-in-out">
@@ -703,14 +702,16 @@
                         // 1. Uncomment the following lines.
                         // 2. Create corresponding API endpoints on your backend (e.g., /amitai/like_story/<story_id>).
                         // 3. Implement the fetch calls to those API endpoints.
-                        // storyCard.querySelector('.like-button').addEventListener('click', () => {
-                        //     console.log('Liked story:', story.id);
-                        //     // fetch('/api/like_story/' + story.id, { method: 'POST' })
-                        // });
-                        // storyCard.querySelector('.dislike-button').addEventListener('click', () => {
-                        //     console.log('Disliked story:', story.id);
-                        //     // fetch('/api/dislike_story/' + story.id, { method: 'POST' })
-                        // });
+                        storyCard.querySelector('.like-button').addEventListener('click', () => {
+                            console.log('Liked story:', story.id);
+                            fetch('/amitai/like_template/' + story.id, { method: 'POST' })
+                            console.log('Liked story:', story.id);
+                        });
+                        storyCard.querySelector('.dislike-button').addEventListener('click', () => {
+                            console.log('Disliked story:', story.id);
+                            fetch('/amitai/dislike_template/' + story.id, { method: 'POST' })
+                            console.log('Disliked story:', story.id);
+                        });
                     });
                 } else {
                     completedStoriesList.innerHTML = '<p class="text-gray-500 text-center">No stories completed yet. Play a game!</p>';
