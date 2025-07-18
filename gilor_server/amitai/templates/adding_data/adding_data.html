@@ -125,7 +125,7 @@
         </div>
 
         <div id="section-view" class="content-section hidden space-y-4">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Completed Stories</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Templates</h2>
             <div id="completedStoriesList" class="space-y-4">
                 <p class="text-gray-500 text-center">No stories completed yet. Play a game!</p>
             </div>
@@ -498,7 +498,7 @@
                 if (templates && templates.length > 0) {
                     templates.forEach(template => {
                     const option = document.createElement('option');
-                    option.value = template.id;
+                    option.value = template.paragraph;
                     option.textContent = template.id;
                     templateSelect.appendChild(option);
                 });
@@ -644,7 +644,7 @@
                 };
 
                 await saveData('story', newStory);
-                displayMessage('Your story has been saved!', 'success');
+                displayMessage('Your story has been saved!', 'success', newStory.id);
 
                 // Clear input fields after generating story
                 inputElements.forEach(input => input.value = '');
@@ -655,7 +655,7 @@
         }
 
         /**
-         * Displays all completed stories.
+         * Displays all templates.
          */
         async function loadCompletedStories() {
             try {
@@ -685,13 +685,13 @@
                         storyCard.className = 'bg-gray-50 p-4 rounded-md border border-gray-200 shadow-sm';
                         storyCard.innerHTML = `
                             <p class="text-sm text-gray-500 mb-1">Template ID: <span class="font-semibold text-gray-700">${story.id}</span></p>
-                            <p class="text-gray-800 whitespace-pre-wrap mb-4">${story.filledText}</p>
+                            <p class="text-gray-800 whitespace-pre-wrap mb-4">${story.paragraph}</p>
                             <div class="flex space-x-2">
                                 <button class="like-button bg-blue-500 hover:bg-blue-600 text-white text-sm py-1 px-3 rounded-md transition duration-200 ease-in-out">
-                                    👍 Like
+                                    👍 Like ${story.likes}
                                 </button>
                                 <button class="dislike-button bg-red-500 hover:bg-red-600 text-white text-sm py-1 px-3 rounded-md transition duration-200 ease-in-out">
-                                    👎 Dislike
+                                    👎 Dislike ${story.dislikes}
                                 </button>
                             </div>
                             `;
@@ -703,14 +703,10 @@
                         // 2. Create corresponding API endpoints on your backend (e.g., /amitai/like_story/<story_id>).
                         // 3. Implement the fetch calls to those API endpoints.
                         storyCard.querySelector('.like-button').addEventListener('click', () => {
-                            console.log('Liked story:', story.id);
                             fetch('/amitai/like_template/' + story.id, { method: 'POST' })
-                            console.log('Liked story:', story.id);
                         });
                         storyCard.querySelector('.dislike-button').addEventListener('click', () => {
-                            console.log('Disliked story:', story.id);
                             fetch('/amitai/dislike_template/' + story.id, { method: 'POST' })
-                            console.log('Disliked story:', story.id);
                         });
                     });
                 } else {
@@ -723,20 +719,20 @@
         }
 
         /**
-         * Clears all completed stories after confirmation.
+         * Clears all templates after confirmation.
          */
         async function handleClearStories() {
-            const confirmed = await showConfirmationModal('Are you sure you want to delete all completed stories? This action cannot be undone.');
+            const confirmed = await showConfirmationModal('Are you sure you want to delete all teplates? This action cannot be undone.');
             if (confirmed) {
                 try {
                     await clearData('story'); // Assuming 'story' is the correct type to clear user-generated stories
-                    displayMessage('All completed stories cleared!', 'success');
+                    displayMessage('All templates cleared!', 'success');
                     loadCompletedStories(); // Refresh the list
                 } catch (error) {
                     // Error handled in clearData function
                 }
             } else {
-                displayMessage('Clearing stories cancelled.', 'info');
+                displayMessage('Clearing templates cancelled.', 'info');
             }
         }
 
@@ -799,7 +795,7 @@
 
             // View Stories Events
             clearStoriesButton.addEventListener('click', () => {
-                showConfirmationModal('Are you sure you want to delete all completed stories?').then(confirmed => {
+                showConfirmationModal('Are you sure you want to delete all templates?').then(confirmed => {
                     if (confirmed) {
                         handleClearData('story'); // Call a generic clear data handler for stories
                     }
@@ -833,7 +829,7 @@
 
             // Bind the clearStoriesButton to clear 'story' data
             clearStoriesButton.addEventListener('click', () => {
-                showConfirmationModal('Are you sure you want to delete all completed stories? This action cannot be undone.').then(confirmed => {
+                showConfirmationModal('Are you sure you want to delete all templates? This action cannot be undone.').then(confirmed => {
                     if (confirmed) {
                         handleClearData('story');
                     }

@@ -165,7 +165,7 @@ def create_data(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body).get("data")
-            name = data.get('name')
+            name = data.get('name', 'Anonymous')  # Default to 'Anonymous' if not provided
             templateText = data.get('templateText')
             if not isinstance(name, str):
                 return JsonResponse({'status': 'error', 'message': 'Name must be a string'}, status=400)
@@ -452,3 +452,9 @@ def dislike_template(request, id):
             return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
     else:
         return JsonResponse({'status': 'error', 'message': 'Only POST requests are allowed'}, status=405)
+
+def two_player(request):
+    """
+    Renders the HTML page for the two-player game.
+    """
+    return render(request, 'two_player/two_player.html')

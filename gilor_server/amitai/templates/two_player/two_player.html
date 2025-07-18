@@ -1,0 +1,59 @@
+{%load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Password Game</title>
+  <link rel="stylesheet" href="{% static 'two_player.css' %}" />
+</head>
+<body>
+  <div class="container">
+    <div id="setup">
+      <h2>Password Game Setup</h2>
+
+      <label>Choose Mode:
+        <select id="mode">
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </label>
+
+      <label>Password:
+        <input type="password" id="password" />
+      </label>
+
+      <label>Hint:
+        <input type="text" id="hint" />
+      </label>
+
+      <label>Lives:
+        <input type="number" id="lives" min="1" value="3" />
+      </label>
+
+      <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="pass-device" class="hidden">
+      <p>Press when ready and hand the computer to your opponent</p>
+      <button onclick="prepareGame()">Ready</button>
+    </div>
+
+    <div id="guessing" class="hidden">
+      <h2>Guess the Password</h2>
+      <p id="hintDisplay"></p>
+      <p id="livesDisplay"></p>
+      <input type="text" id="guessInput" placeholder="Enter password" />
+      <button onclick="checkGuess()">Submit</button>
+      <p id="feedback"></p>
+    </div>
+
+    <div id="end" class="hidden">
+      <h2 id="endMessage"></h2>
+      <button onclick="location.reload()">Play Again</button>
+    </div>
+  </div>
+
+  <script src="{% static 'two_player.js' %}"></script>
+</body>
+</html>

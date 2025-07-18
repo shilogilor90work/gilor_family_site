@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import api_home, snake, save_score, adding_data, create_data, get_all_templates, delete_all_templates, like_template, dislike_template, madlibs_game, get_finished_template_by_id, get_finished_data, create_finished_data, get_random_template, delete_data, update_data
+from .views import api_home, snake, save_score, two_player, adding_data, create_data, get_all_templates, delete_all_templates, like_template, dislike_template, madlibs_game, get_finished_template_by_id, get_finished_data, create_finished_data, get_random_template, delete_data, update_data
 
 
 urlpatterns = [
@@ -20,4 +20,5 @@ urlpatterns = [
     path('update_data/<int:id>', update_data, name='update_data'),
     path('like_template/<int:id>', like_template, name='like_template'),
     path('dislike_template/<int:id>', dislike_template, name='dislike_template'),
+    path('two_player', two_player, name='two_player'),
 ]
