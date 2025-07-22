@@ -1,0 +1,78 @@
+/* Custom styles to enhance the look and feel */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #1a202c; /* Dark background */
+    color: #e2e8f0; /* Light text color */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.game-card {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    border: 2px solid #4a5568; /* Subtle border */
+    border-radius: 0.5rem; /* Rounded corners for the card */
+}
+
+.game-card:hover {
+    transform: translateY(-8px) scale(1.02); /* Lift and slightly enlarge on hover */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5); /* Stronger shadow on hover */
+}
+
+.game-card img {
+    width: 100%;
+    height: 180px; /* Fixed height for consistency */
+    object-fit: cover; /* Cover the area, cropping if necessary */
+    transition: filter 0.3s ease-in-out;
+    border-top-left-radius: 0.5rem; /* Rounded corners for image top */
+    border-top-right-radius: 0.5rem; /* Rounded corners for image top */
+}
+
+.game-card:hover img {
+    filter: brightness(0.7); /* Darken image on hover */
+}
+
+.game-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+    color: #fff;
+    padding: 10px;
+    text-align: center;
+    opacity: 0; /* Hidden by default */
+    transform: translateY(100%); /* Start off-screen */
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    font-weight: bold;
+    font-size: 1.1em;
+    box-sizing: border-box; /* Include padding in element's total width and height */
+}
+
+.game-card:hover .game-name {
+    opacity: 1; /* Visible on hover */
+    transform: translateY(0); /* Slide up into view */
+}
+
+/* Responsive grid for game cards */
+@media (min-width: 640px) {
+    .game-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+}
+@media (min-width: 768px) {
+    .game-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+}
+@media (min-width: 1024px) {
+    .game-grid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+}

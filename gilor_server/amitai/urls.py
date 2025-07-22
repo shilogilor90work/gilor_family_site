@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import api_home, snake, save_score, two_player, countdown, adding_data, rectangle, calculator, create_data, get_all_templates, delete_all_templates, like_template, dislike_template, madlibs_game, get_finished_template_by_id, get_finished_data, create_finished_data, get_random_template, delete_data, update_data
+from .views import api_home, snake, save_score, main_games_senter, two_player, countdown, adding_data, rectangle, calculator, create_data, get_all_templates, delete_all_templates, like_template, dislike_template, madlibs_game, get_finished_template_by_id, get_finished_data, create_finished_data, get_random_template, delete_data, update_data
 
 
 urlpatterns = [
@@ -24,4 +24,5 @@ urlpatterns = [
     path('calculator', calculator, name='calculator'),
     path('countdown', countdown, name='countdown'),
     path('rectangle', rectangle, name='rectangle'),
+    path('main_games_senter', main_games_senter, name='main_games_senter'),
 ]

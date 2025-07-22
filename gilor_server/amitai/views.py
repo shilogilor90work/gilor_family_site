@@ -476,3 +476,9 @@ def countdown(request):
     Renders the HTML page for the countdown game.
     """
     return render(request, 'countdown/countdown.html')
+
+def main_games_senter(request):
+    """
+    Renders the main games center page.
+    """
+    return render(request, 'main_games_senter/main_games_senter.html')
