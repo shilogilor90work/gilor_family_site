@@ -1,0 +1,111 @@
+body {
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f4f8;
+    margin: 0;
+    color: #333;
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+h1 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 2em;
+}
+
+.input-group {
+    width: 100%;
+    text-align: left;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    color: #555;
+    font-weight: bold;
+}
+
+input[type="text"] {
+    width: calc(100% - 24px); /* Adjust for padding and border */
+    padding: 12px;
+    border: 1px solid #c0d9e6;
+    border-radius: 6px;
+    font-size: 1em;
+    box-sizing: border-box;
+}
+
+button {
+    background-color: #28a745; /* Green for start */
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    width: 100%;
+    max-width: 200px;
+}
+
+button:hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+#countdownDisplay {
+    font-size: 4em;
+    font-weight: bold;
+    color: #007bff;
+    min-height: 1.2em; /* Reserve space to prevent layout shift */
+    margin-top: 20px;
+}
+
+#messageDisplay {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #dc3545; /* Red for GO!!! */
+    min-height: 1.2em; /* Reserve space */
+    margin-top: 10px;
+}
+
+.error-message {
+    color: #d9534f;
+    font-size: 0.9em;
+    margin-top: 5px;
+    min-height: 1.2em;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+        width: 95%;
+    }
+    #countdownDisplay {
+        font-size: 3em;
+    }
+    #messageDisplay {
+        font-size: 2em;
+    }
+}

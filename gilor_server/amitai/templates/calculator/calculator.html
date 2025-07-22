@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Calculator</title>
+    <link rel="stylesheet" href="{% static 'calculator.css' %}">
+</head>
+<body>
+    <div class="calculator-container">
+        <h1>Simple Calculator</h1>
+        <div class="input-group">
+            <label for="num1">First Number:</label>
+            <input type="text" id="num1" placeholder="Enter a number">
+            <p id="num1-error" class="error-message"></p>
+        </div>
+        <div class="input-group">
+            <label for="operator">Operator:</label>
+            <input type="text" id="operator" placeholder="Enter /, *, +, -, or ^">
+            <p id="operator-error" class="error-message"></p>
+        </div>
+        <div class="input-group">
+            <label for="num2">Second Number:</label>
+            <input type="text" id="num2" placeholder="Enter a number">
+            <p id="num2-error" class="error-message"></p>
+        </div>
+        <button id="calculate-btn">Calculate</button>
+        <div class="result-container">
+            <p id="result"></p>
+        </div>
+    </div>
+
+    <script src="{% static 'calculator.js' %}"></script>
+</body>
+</html>

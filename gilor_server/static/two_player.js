@@ -9,7 +9,7 @@ function startGame() {
   lives = parseInt(document.getElementById("lives").value);
   mode = document.getElementById("mode").value;
 
-  if (!password || (mode !== "hard" && !hint) || lives < 1) {
+  if (!password || (mode != "hard" && hint) || lives < 1) {
     alert("Fill in all fields (hint not required for hard mode).");
     return;
   }

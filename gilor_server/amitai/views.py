@@ -458,3 +458,21 @@ def two_player(request):
     Renders the HTML page for the two-player game.
     """
     return render(request, 'two_player/two_player.html')
+
+def calculator(request):
+    """
+    Renders the HTML page for the calculator.
+    """
+    return render(request, 'calculator/calculator.html')
+
+def rectangle(request):
+    """
+    Renders the HTML page for the rectangle game.
+    """
+    return render(request, 'rectangle/rectangle.html')
+
+def countdown(request):
+    """
+    Renders the HTML page for the countdown game.
+    """
+    return render(request, 'countdown/countdown.html')
