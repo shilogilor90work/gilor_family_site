@@ -70,7 +70,7 @@ ROOT_URLCONF = 'server.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')], # Add this line if you have project-level templates
+        'DIRS': [os.path.join(BASE_DIR, 'gilor_server/amitai')], # Add this line if you have project-level templates
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

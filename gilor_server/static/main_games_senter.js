@@ -34,7 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
         {
             imageSrc: "https://placehold.co/400x250/FFAA33/FFFFFF?text=Calculator",
             name: "Calculator",
-            gamePath: "http://127.0.0.1:8000/amitai/calculator"// <--- ADD YOUR IMAGE URL HERE
+            gamePath: "http://127.0.0.1:8000/amitai/calculator"
+        },
+        {
+            imageSrc: "https://placehold.co/400x250/33AAFF/FFFFFF?text=Tic Tac Toe",
+            name: "Tic Tac Toe",
+            gamePath: "http://127.0.0.1:8000/amitai/tic_tac_toe"
         }
     ];
     // === END: YOU NEED TO MODIFY THIS SECTION ===

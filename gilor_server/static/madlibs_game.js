@@ -17,7 +17,6 @@ function displayMessage(message, type) {
 
 
 async function saveData(type, data) {
-    console.log("starting function");
     try {
         const response = await fetch(CREATE_DATA_ENDPOINT, {
             method: 'POST',
@@ -26,12 +25,10 @@ async function saveData(type, data) {
             },
             body: JSON.stringify({ data }),
         });
-        console.log("started fetch");
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || `API error: ${response.status}`);
         }
-        console.log("end fetch");
         return await response.json();
     } catch (error) {
         console.error(`Error saving ${type}:`, error);
@@ -56,7 +53,6 @@ async function get_random_template(type) { // Removed 'data' from parameters
 
         if (!response.ok) {
             const errorData = await response.json();
-            console.log("end get_random_template");
             throw new Error(errorData.message || `API error: ${response.status}`);
         }
         json_data = await response.json();
@@ -68,49 +64,7 @@ async function get_random_template(type) { // Removed 'data' from parameters
     }
 }
 
-
-// document.addEventListener('DOMContentLoaded', () => {
-//     const generateButton = document.getElementById('generateStory');
-//     const madLibsStoryOutput = document.getElementById('madLibsStory');
-
-//     generateButton.addEventListener('click', async () => {
-        
-//         const adj1 = document.getElementById('adj1').value;
-//         const noun1 = document.getElementById('noun1').value;
-//         const adj2 = document.getElementById('adj2').value;
-//         const verb1 = document.getElementById('verb1').value;
-//         const adj3 = document.getElementById('adj3').value;
-//         const adj4 = document.getElementById('adj4').value;
-
-//         if (adj1 && noun1 && adj2 && verb1 && adj3 && adj4) {
-//             const story = `Today I went to a ${adj1} zoo.
-// In an exhibit, I saw a ${noun1} tied to a tree.
-// The ${noun1} was very ${adj2},
-// ${verb1} it was ${adj3}.
-// I would ${adj4} to go there again.`;
-
-
-//             madLibsStoryOutput.textContent = story;
-//             console.log("calling function");
-//             saveData("finished_story", {
-//                 "paragraph_id": 1, 
-//                 "user_name": "Amitai",
-//                 "noun": [noun1],
-//                 "adjective": [adj1, adj2, adj3, adj4],
-//                 "verb": [verb1],
-//                 "funny_word": [],
-//                 "funny_name": []
-//             });
-//             console.log("called function");
-
-
-//         } else {
-//             result = await get_random_template("paragraph");
-//             console.log(result);
-//             madLibsStoryOutput.textContent = "Please fill in all the blanks to generate the story!";
-//         }
-//     });
-// });
+// Function to get a random template and generate input fields
 
 
 // Function to generate input fields based on template
@@ -121,7 +75,7 @@ function generateInputFields(template) {
     const placeholders = {}; // To count occurrences of each placeholder type
 
     // Regex to find placeholders like [noun], [verb], [adjective]
-    const regex = /\[(noun|verb|adjective|funny_name|funny_word)\]/g;
+    const regex = /\[(noun|verb|adjective|funny_name|job|number|funny_word)\]/g;
     let match;
 
     while ((match = regex.exec(template.paragraph)) !== null) {
@@ -146,6 +100,12 @@ function generateInputFields(template) {
                 case 'adjective':
                     promptText = 'Enter an adjective (a descriptive word):';
                     break;
+                case 'job':
+                    promptText = 'Enter a job title (e.g., doctor, teacher):';
+                    break;
+                case 'number':
+                    promptText = 'Enter a number:';
+                    break;
                 case 'funny_name':
                     promptText = 'Enter a funny name:';
                     break;
@@ -169,36 +129,6 @@ function generateInputFields(template) {
 }
 
 
-// Function to generate the story
-// function generateStory() {
-//     if (!currentTemplate) {
-//         displayMessage('No template loaded. Please refresh the page.', 'error');
-//         return;
-//     }
-
-//     let story = currentTemplate.paragraph;
-//     const inputs = document.querySelectorAll('#inputSection input');
-//     const replacements = {};
-
-//     inputs.forEach(input => {
-//         const type = input.getAttribute('data-type');
-//         const id = input.id;
-//         replacements[id] = input.value || `[${type}]`; // Use placeholder if input is empty
-//     });
-
-//     // Replace placeholders in the story
-//     const regex = /\[(noun|verb|adjective|funny_name|funny_word)\]/g;
-//     let inputCounter = { noun: 0, verb: 0, adjective: 0, funny_name: 0, funny_word: 0 };
-
-//     story = story.replace(regex, (match, p1) => {
-//         inputCounter[p1]++;
-//         const replacementId = `${p1}${inputCounter[p1]}`;
-        
-//         return replacements[replacementId] || match; // Use the collected replacement or original placeholder
-//     });
-
-//     document.getElementById('madLibsStory').textContent = story;
-// }
 
 
 
@@ -216,6 +146,8 @@ async function generateStory() { // Made async to await saveStoryToAPI
         noun: [],
         adjective: [],
         verb: [],
+        job: [],
+        number: [],
         funny_word: [],
         funny_name: []
     };
@@ -234,8 +166,8 @@ async function generateStory() { // Made async to await saveStoryToAPI
     });
 
     // Replace placeholders in the story
-    const regex = /\[(noun|verb|adjective|funny_name|funny_word)\]/g;
-    let inputCounter = { noun: 0, verb: 0, adjective: 0, funny_name: 0, funny_word: 0 };
+    const regex = /\[(noun|verb|adjective|job|number|funny_name|funny_word)\]/g;
+    let inputCounter = { noun: 0, verb: 0, adjective: 0, job: 0 , number: 0 , funny_name: 0, funny_word: 0 };
 
     story = story.replace(regex, (match, p1) => {
         inputCounter[p1]++;
@@ -253,11 +185,12 @@ async function generateStory() { // Made async to await saveStoryToAPI
         noun: collectedWords.noun,
         adjective: collectedWords.adjective,
         verb: collectedWords.verb,
+        job: collectedWords.job,
+        number: collectedWords.number,
         funny_word: collectedWords.funny_word,
         funny_name: collectedWords.funny_name,
         generated_story_text: story // You might want to save the final story text as well
     };
-    console.log("Generated Story Data:", storyData); // Log the data to be saved
     // NEW: Save the story to the API
     await saveStoryToAPI(storyData); // Call the new function
 }
@@ -267,22 +200,7 @@ async function generateStory() { // Made async to await saveStoryToAPI
 // Event listener for the Generate Story button
 document.getElementById('generateStory').addEventListener('click', generateStory);
 
-// On page load, fetch a random template and generate inputs
-// document.addEventListener('DOMContentLoaded', async () => {
-//     try {
-//         // You might want to pass a 'type' if your API supports filtering templates
-//         // For now, assuming a general random template is fetched
-//         currentTemplate = await get_random_template('general');
-//         if (currentTemplate && currentTemplate.paragraph) {
-//             generateInputFields(currentTemplate);
-//         } else {
-//             displayMessage('Failed to load a valid Mad Libs template.', 'error');
-//         }
-//     } catch (error) {
-//         console.error('Error on page load:', error);
-//         displayMessage('Could not load Mad Libs template on startup. Please try again later.', 'error');
-//     }
-// });
+
 
 // Function to handle loading a new template (for button click)
 async function loadNewTemplate() {
@@ -331,7 +249,6 @@ async function saveStoryToAPI(storyData) {
 
         const result = await response.json();
         console.log('Story saved successfully:', result);
-        displayMessage('Story saved successfully!', 'success');
     } catch (error) {
         console.error('Error saving story:', error);
         displayMessage(`Error saving story: ${error.message}`, 'error');

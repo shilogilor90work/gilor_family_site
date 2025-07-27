@@ -21,6 +21,8 @@ class madlibs(models.Model):
     noun = models.IntegerField(default=0)
     adjective = models.IntegerField(default=0)
     verb = models.IntegerField(default=0)
+    job = models.IntegerField(default=0)
+    number = models.IntegerField(default=0)
     funny_word = models.IntegerField(default=0)
     funny_name = models.IntegerField(default=0)
     likes = models.IntegerField(default=0)
@@ -50,6 +52,14 @@ class madlibs_user_history(models.Model):
         models.CharField(max_length=200),
         default=list, # important for default empty list
     )
+    job = JSONField(
+        models.CharField(max_length=200),
+        default=list, # important for default empty list
+    )
+    number = JSONField(
+        models.CharField(max_length=200),
+        default=list, # important for default empty list
+    )
     funny_name  = JSONField(
         models.CharField(max_length=200),
         
@@ -57,3 +67,13 @@ class madlibs_user_history(models.Model):
     )
     def __str__(self):
         return self.user_id
+
+class flappy_bird(models.Model):
+    id = models.AutoField(primary_key=True)
+    user_name = models.CharField(max_length=255)
+    score = models.IntegerField()
+    time_created = models.DateTimeField(auto_now_add=True)
+    time_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user_name} - {self.score}"

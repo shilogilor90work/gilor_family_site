@@ -11,7 +11,7 @@ from rest_framework.permissions import AllowAny
 from .models import madlibs
 from .models import GameRecord
 import random
-from .models import madlibs_user_history
+from .models import madlibs_user_history, flappy_bird
 def api_home(request):
     return JsonResponse({"message": "Welcome to the API"})
 
@@ -46,8 +46,6 @@ def snake(request):
     context = {
         'top_scores': top_scores_list
     }
-    print("shilo")
-    print(context)
     return render(request, 'snake_game/snake.html', context)
 
 
@@ -94,7 +92,6 @@ def GameScore(request): # Renamed function for clarity
             return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
         except Exception as e:
             # Log the error for debugging in a real application
-            print(f"Error saving game record: {e}")
             return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {e}'}, status=500)
     else:
         return JsonResponse({'status': 'error', 'message': 'Only POST requests are allowed'}, status=405)
@@ -171,6 +168,7 @@ def create_data(request):
                 return JsonResponse({'status': 'error', 'message': 'Name must be a string'}, status=400)
                 placeholders = ["noun", "adjective", "verb", "funny_word", "funny_name"]
 
+
             # Find all items inside square brackets
             found = re.findall(r"\[(.*?)\]", templateText)
 
@@ -178,21 +176,23 @@ def create_data(request):
             noun = found.count("noun")
             adjective = found.count("adjective")
             verb = found.count("verb")
+            job = found.count("job")
+            number = found.count("number")
             funny_word = found.count("funny_word")
             funny_name = found.count("funny_name")
             # Save the record to the database
-            print("saving")
             madlibs.objects.create(
                 paragraph=templateText,
                 noun=noun,
                 adjective=adjective,
                 verb = verb,
+                job = job,
+                number = number,
                 funny_word = funny_word,
                 funny_name = funny_name,
                 likes = 0,
                 dislikes = 0,
             )
-            print("saved")
             return JsonResponse({'status': 'success', 'message': 'Data received successfully', 'name': name})
 
         except json.JSONDecodeError:
@@ -212,7 +212,7 @@ def get_all_templates(request):
     if request.method == 'GET':
         try:
             # Fetch all madlibs records
-            madlibs_data = madlibs.objects.all().values('id', 'paragraph', 'noun', 'adjective', 'verb', 'funny_word', 'funny_name', 'likes', 'dislikes')
+            madlibs_data = madlibs.objects.all().values('id', 'paragraph', 'noun', 'adjective', 'verb', 'number', 'job', 'funny_word', 'funny_name', 'likes', 'dislikes')
             return JsonResponse(list(madlibs_data), safe=False)  # Return as a list of dictionaries
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
@@ -265,6 +265,10 @@ def update_data(request, id):
                 madlib.funny_word = data['funny_word']
             if 'funny_name' in data:
                 madlib.funny_name = data['funny_name']
+            if 'job' in data:
+                madlib.job = data['job']
+            if 'number' in data:
+                madlib.number = data['number']
             if 'likes' in data:
                 madlib.likes = data['likes']
             if 'dislikes' in data:
@@ -289,12 +293,13 @@ def create_finished_data(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body).get("data")
-            print(data)
             paragraph_id = data.get('paragraph_id')
             user_name = data.get('user_name')
             noun = data.get('noun', [])
             adjective = data.get('adjective', [])
             verb = data.get('verb', [])
+            job = data.get('job', [])
+            number = data.get('number', [])
             funny_word = data.get('funny_word', [])
             funny_name = data.get('funny_name', [])
 
@@ -313,6 +318,8 @@ def create_finished_data(request):
                 verb=verb,
                 funny_word=funny_word,
                 funny_name=funny_name,
+                job=job,
+                number=number,
                 likes=0,
                 dislikes=0,
             )
@@ -333,7 +340,7 @@ def get_finished_data(request):
             # Fetch all finished madlibs records
             from .models import madlibs_user_history
             finished_data = madlibs_user_history.objects.all().values(
-                'id', 'paragraph_id', 'user_name', 'noun', 'adjective', 'verb', 
+                'id', 'paragraph_id', 'user_name', 'noun', 'adjective', 'number' 'verb', 'job',
                 'funny_word', 'funny_name', 'likes', 'dislikes'
             )
             return JsonResponse(list(finished_data), safe=False)  # Return as a list of dictionaries
@@ -409,14 +416,11 @@ def like_template(request, id):
     """
     API endpoint to like a finished madlib template by ID.
     """
-    print("like_template called with ID:", id)
     if request.method == 'POST':
         try:
             # Fetch the finished madlib record by ID
             try:
-                print("before template found:", id)
                 finished_template = madlibs.objects.get(id=id)
-                print("after template found:", id)
             except madlibs.DoesNotExist:
                 return JsonResponse({'status': 'error', 'message': 'Finished template not found'}, status=404)
 
@@ -482,3 +486,69 @@ def main_games_senter(request):
     Renders the main games center page.
     """
     return render(request, 'main_games_senter/main_games_senter.html')
+
+def tic_tac_toe(request):
+    """
+    Renders the HTML page for the Tic Tac Toe game.
+    """
+    return render(request, 'tic_tac_toe/tic_tac_toe.html')
+
+def render_flappy_bird(request):
+    """
+    Renders the HTML page for the Flappy Bird game.
+    """
+    return render(request, 'flappy_bird/flappy_bird.html')
+
+@csrf_exempt # WARNING: Use proper CSRF protection in production!
+def save_flappy_bird_score(request):
+    """
+    API endpoint to save the Flappy Bird game score.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_name = data.get('user_name', 'Anonymous')  # Default to 'Anonymous' if not provided
+            score = data.get('score')
+            if not isinstance(user_name, str) or not isinstance(score, int):
+                return JsonResponse({'status': 'error', 'message': 'invalid input types'}, status=400)
+
+
+            flappy_bird.objects.create(
+                user_name=user_name,
+                score=score,
+            )
+            return JsonResponse({'status': 'success', 'message': 'Flappy Bird score saved successfully'})
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+
+        return JsonResponse({'status': 'error', 'message': 'Only POST requests are allowed'}, status=405)
+
+def get_flappy_bird_score(request):
+    """
+    API endpoint to get all Flappy Bird scores.
+    """
+    if request.method == 'GET':
+        try:
+            scores = flappy_bird.objects.all().values('user_name', 'score', 'id',)
+            return JsonResponse(list(scores), safe=False)  # Return as a list of dictionaries
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only GET requests are allowed'}, status=405)
+
+def get_flappy_bird_top_score(request):
+    """
+    API endpoint to get all Flappy Bird scores.
+    """
+    if request.method == 'GET':
+        try:
+            scores = flappy_bird.objects.all().values('user_name', 'score', 'id',).order_by('-score')[:1]  # Get top 1 scores
+            return JsonResponse(list(scores), safe=False)  # Return as a list of dictionaries
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only GET requests are allowed'}, status=405)
+    

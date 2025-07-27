@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import api_home, snake, save_score, main_games_senter, two_player, countdown, adding_data, rectangle, calculator, create_data, get_all_templates, delete_all_templates, like_template, dislike_template, madlibs_game, get_finished_template_by_id, get_finished_data, create_finished_data, get_random_template, delete_data, update_data
+from .views import api_home, snake, save_score, get_flappy_bird_score, get_flappy_bird_top_score, save_flappy_bird_score, tic_tac_toe, render_flappy_bird, main_games_senter, two_player, countdown, adding_data, rectangle, calculator, create_data, get_all_templates, delete_all_templates, like_template, dislike_template, madlibs_game, get_finished_template_by_id, get_finished_data, create_finished_data, get_random_template, delete_data, update_data
 
 
 urlpatterns = [
@@ -10,6 +10,9 @@ urlpatterns = [
     # path('madlibs/', include('amitai.madlibs_urls')), 
     path('adding_data', adding_data, name='adding_data'),
     path('create_data', create_data, name='create_data'),
+    path('save_flappy_bird_score', save_flappy_bird_score, name='save_flappy_bird_score'),
+    path('get_flappy_bird_score', get_flappy_bird_score, name='get_flappy_bird_score'),
+    path('get_flappy_bird_top_score', get_flappy_bird_top_score, name='get_flappy_bird_top_score'),
     path('get_all_templates', get_all_templates, name='get_all_templates'),
     path('delete_all_templates', delete_all_templates, name='delete_all_templates'),
     path('get_finished_data', get_finished_data, name='get_finished_data'),
@@ -25,4 +28,7 @@ urlpatterns = [
     path('countdown', countdown, name='countdown'),
     path('rectangle', rectangle, name='rectangle'),
     path('main_games_senter', main_games_senter, name='main_games_senter'),
+    path('tic_tac_toe', tic_tac_toe, name='tic_tac_toe'),
+    path('flappy_bird', render_flappy_bird, name='flappy_bird'),
+
 ]
