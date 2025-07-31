@@ -64,6 +64,9 @@ function sendGameRecordToAPI(Score, name) {
         console.error('Error sending game record to API:', error);
     });
 }
+async function delay(seconds) {
+  return new Promise(resolve => setTimeout(resolve, seconds * 1000));
+}
 
 function drawBird() {
   ctx.fillStyle = 'yellow';
@@ -170,7 +173,9 @@ window.addEventListener('click', () => {
   bird.velocity = bird.lift;
 });
 
+delay(3);
 update();
+
 function resetGame() {
     bird.y = 150;
     bird.velocity = 0;
@@ -179,6 +184,7 @@ function resetGame() {
     score = 0;
     gameOver = false;
     scoreElement.textContent = 'Score: ' + score;
+    delay(3);
     update();
 }
 

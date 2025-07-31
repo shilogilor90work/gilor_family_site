@@ -9,12 +9,8 @@
 </head>
 <body>
   <div class="score">Score: 0</div>
-  <div class="user-name">
-    <label for="user-name">Enter your name:</label>
-    <input type="text" id="user-name" name="user-name" placeholder="Anonymous">
-  </div>
-  <canvas id="gameCanvas" width="700" height="500"></canvas>
   <button class="reset-button">Restart</button>
+  <canvas id="gameCanvas" width="700" height="500"></canvas>
   <div class="game-over-message" style="display: none;">Game Over! Your score was: <span class="final-score"></span></div>
   <script src="{% static 'flappy_bird.js' %}"></script>
 </body>

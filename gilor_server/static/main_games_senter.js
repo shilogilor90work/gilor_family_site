@@ -7,39 +7,44 @@ document.addEventListener('DOMContentLoaded', () => {
     // - gamePath: The URL to which the user will be redirected when they click the picture.
     const games = [
         {
-            imageSrc: "https://placehold.co/400x250/FF5733/FFFFFF?text=madlibs", // <--- ADD YOUR IMAGE URL HERE
+            imageSrc: "https:placehold.co/400x250/FF5733/FFFFFF?text=madlibs", // <--- ADD YOUR IMAGE URL HERE
             name: "Madlibs", // <--- ADD YOUR GAME NAME HERE
-            gamePath: "http://127.0.0.1:8000/amitai/madlibs_game" // <--- ADD YOUR GAME PATH (URL) HERE
+            gamePath: "/amitai/madlibs_game" // <--- ADD YOUR GAME PATH (URL) HERE
         },
         {
             imageSrc: "https://placehold.co/400x250/33FF57/000000?text=Two+Player+Password", // <--- ADD YOUR IMAGE URL HERE
             name: "Two Player Password", // <--- ADD YOUR GAME NAME HERE
-            gamePath: "http://127.0.0.1:8000/amitai/two_player" // <--- ADD YOUR GAME PATH (URL) HERE
+            gamePath: "/amitai/two_player" // <--- ADD YOUR GAME PATH (URL) HERE
         },
         {
             imageSrc: "https://placehold.co/400x250/3357FF/FFFFFF?text=Snake", // <--- ADD YOUR IMAGE URL HERE
             name: "Snake", // <--- ADD YOUR GAME NAME HERE
-            gamePath: "http://127.0.0.1:8000/amitai/snake" // <--- ADD YOUR GAME PATH (URL) HERE
+            gamePath: "/amitai/snake" // <--- ADD YOUR GAME PATH (URL) HERE
         },
         {
             imageSrc: "https://placehold.co/400x250/335754/FFFFFF?text=Rectangle", // <--- ADD YOUR IMAGE URL HERE
             name: "Rectangle",
-            gamePath: "http://127.0.0.1:8000/amitai/rectangle"
+            gamePath: "/amitai/rectangle"
         },
         {
             imageSrc: "https://placehold.co/400x250/AAAAAA/000000?text=Countdown",
             name: "Countdown",
-            gamePath: "http://127.0.0.1:8000/amitai/countdown"
+            gamePath: "/amitai/countdown"
         },
         {
             imageSrc: "https://placehold.co/400x250/FFAA33/FFFFFF?text=Calculator",
             name: "Calculator",
-            gamePath: "http://127.0.0.1:8000/amitai/calculator"
+            gamePath: "/amitai/calculator"
         },
         {
             imageSrc: "https://placehold.co/400x250/33AAFF/FFFFFF?text=Tic Tac Toe",
             name: "Tic Tac Toe",
-            gamePath: "http://127.0.0.1:8000/amitai/tic_tac_toe"
+            gamePath: "/amitai/tic_tac_toe"
+        },
+        {
+            imageSrc: "https://placehold.co/400x250/FF33AA/FFFFFF?text=Flappy Bird",
+            name: "Flappy Bird",
+            gamePath: "/amitai/flappy_bird"
         }
     ];
     // === END: YOU NEED TO MODIFY THIS SECTION ===

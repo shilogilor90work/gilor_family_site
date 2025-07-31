@@ -1,32 +1,28 @@
 let password = "";
 let hint = "";
 let lives = 0;
-let mode = "";
 
 function startGame() {
   password = document.getElementById("password").value.trim();
   hint = document.getElementById("hint").value.trim();
   lives = parseInt(document.getElementById("lives").value);
-  mode = document.getElementById("mode").value;
 
-  if (!password || (mode != "hard" && hint) || lives < 1) {
-    alert("Fill in all fields (hint not required for hard mode).");
+  if (!password || lives < 1) {
+    alert("Fill in all fields.");
     return;
   }
-
+  console.log(password)
   document.getElementById("setup").classList.add("hidden");
   document.getElementById("pass-device").classList.remove("hidden");
 }
 
 function prepareGame() {
   setTimeout(() => {
-    console.clear();
+    console.log(password);
     setTimeout(() => {
       document.getElementById("pass-device").classList.add("hidden");
       document.getElementById("guessing").classList.remove("hidden");
-
-      document.getElementById("hintDisplay").textContent =
-        mode === "hard" ? "" : "Hint: " + hint;
+      document.getElementById("hintDisplay").textContent = `Hint: ${hint}`;
       document.getElementById("livesDisplay").textContent = `Lives left: ${lives}`;
     }, 500);
   }, 500);
@@ -44,14 +40,11 @@ function checkGuess() {
   lives--;
 
   if (lives <= 0) {
-    endGame("Out of lives. Game over.");
+    endGame("Out of lives. Game over.The password was: " + password);
     return;
   }
 
   let message = `'${guess}' is not correct. ${lives} lives remaining.`;
-  if (mode === "hard") {
-    hardModeEffect();
-  }
 
   feedback.textContent = message;
   document.getElementById("livesDisplay").textContent = `Lives left: ${lives}`;
@@ -64,10 +57,14 @@ function endGame(message) {
   document.getElementById("endMessage").textContent = message;
 }
 
-function hardModeEffect() {
-  const container = document.querySelector(".container");
-  container.classList.add("blurred");
-  setTimeout(() => {
-    container.classList.remove("blurred");
-  }, 800); // simulate screen distortion/delay
+function resetGame() {
+  document.getElementById("end").classList.add("hidden");
+  document.getElementById("setup").classList.remove("hidden");
+  document.getElementById("password").value = "";
+  document.getElementById("hint").value = "";
+  document.getElementById("lives").value = "3";
+  password = "";
+  hint = "";
+  lives = 0;
+  document.getElementById("feedback").textContent = "";
 }
