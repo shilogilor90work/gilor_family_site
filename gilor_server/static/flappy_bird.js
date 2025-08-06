@@ -136,7 +136,8 @@ function highScore() {fetch('/amitai/get_flappy_bird_top_score', {
     }})
     .then(response => response.json())
     .then(data => {
-        if (data.status === 'success') {
+      console.log('High score:', data);
+        if (data.score !== null) {
             console.log('High score:', data.score);
             ctx.fillStyle = '#fff';
             ctx.font = '20px sans-serif';

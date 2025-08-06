@@ -5,17 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Game Gallery</title>
-    <link rel="stylesheet" href="{% static 'main_games_senter.css' %}">
+    <link rel="stylesheet" href="{% static 'main_games_center.css' %}">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 p-6">
     <div class="container mx-auto max-w-6xl">
         <h1 class="text-4xl font-extrabold text-center mb-10 text-blue-400">My Game Collection</h1>
 
+        <div class="mb-8">
+            <input type="text" id="search-bar" placeholder="Search for a game..." class="w-full p-3 rounded-lg bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" oninput="searchGames()">
+        </div>
+
         <div id="game-gallery" class="game-grid grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            </div>
+        </div>
     </div>
 
-    <script src="{% static 'main_games_senter.js' %}"></script>
+    <script src="{% static 'main_games_center.js' %}"></script>
 </body>
 </html>

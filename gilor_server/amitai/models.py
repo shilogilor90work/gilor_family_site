@@ -77,3 +77,20 @@ class flappy_bird(models.Model):
 
     def __str__(self):
         return f"{self.user_name} - {self.score}"
+
+class hangman_words(models.Model):
+    word = models.CharField(max_length=255)
+    likes = models.IntegerField(default=0)
+    dislikes = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.word
+
+class game_links(models.Model):
+    id = models.AutoField(primary_key=True)
+    game_image = models.URLField(max_length=2000)
+    game_name = models.CharField(max_length=255)
+    game_link = models.URLField(max_length=2000)
+
+    def __str__(self):
+        return self.game_name

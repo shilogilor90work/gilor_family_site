@@ -11,14 +11,12 @@ function startGame() {
     alert("Fill in all fields.");
     return;
   }
-  console.log(password)
   document.getElementById("setup").classList.add("hidden");
   document.getElementById("pass-device").classList.remove("hidden");
 }
 
 function prepareGame() {
   setTimeout(() => {
-    console.log(password);
     setTimeout(() => {
       document.getElementById("pass-device").classList.add("hidden");
       document.getElementById("guessing").classList.remove("hidden");

@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Link to external CSS file -->
+    <link rel="stylesheet" href="{% static 'hangman.css' %}">
+</head>
+<body>
+    <div class="container">
+        <!-- Hangman Game Section -->
+        <div class="game-section">
+            <h1 class="text-4xl font-bold mb-6 text-gray-800">Hangman Game</h1>
+            <div id="hangman-drawing" class="hangman-drawing mb-4">
+                <!-- Hangman drawing will be rendered here -->
+            </div>
+            <div id="word-display" class="word-display mb-4"></div>
+            <div id="guessed-letters" class="guessed-letters mb-4">Guessed Letters: None</div>
+
+            <div id="keyboard-container" class="keyboard-container">
+                <!-- Letter buttons will be dynamically generated here -->
+            </div>
+
+            <div id="message" class="message"></div>
+            <button id="new-game-button" class="new-game-button">New Game</button>
+        </div>
+
+        <!-- Future Input Section -->
+        <div class="future-section">
+            <h2 class="text-3xl font-bold mb-6 text-gray-800">create word</h2>
+            <p class="text-gray-600 mb-4">This input is for future development and currently does not affect the game.</p>
+            <input type="text" id="future-input" placeholder="Type something here...">
+            <button id="store-input-button" class="store-button">Store Input</button>
+            <p class="text-gray-500 text-sm mt-4">Stored Value: <span id="future-input-value"></span></p>
+        </div>
+    </div>
+
+    <!-- Link to external JavaScript file -->
+    <script src="{% static 'hangman.js' %}"></script>
+</body>
+</html>

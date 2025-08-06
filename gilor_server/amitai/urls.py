@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import api_home, snake, save_score, get_flappy_bird_score, get_flappy_bird_top_score, save_flappy_bird_score, tic_tac_toe, render_flappy_bird, main_games_senter, two_player, countdown, adding_data, rectangle, calculator, create_data, get_all_templates, delete_all_templates, like_template, dislike_template, madlibs_game, get_finished_template_by_id, get_finished_data, create_finished_data, get_random_template, delete_data, update_data
+from .views import api_home, snake, render_add_games, create_game, save_score, create_hangman_word, get_hangman_word, get_hangman_words, delete_flappy_bird_score, rander_hangman, get_flappy_bird_score, get_flappy_bird_top_score, save_flappy_bird_score, tic_tac_toe, render_flappy_bird, main_games_center, two_player, countdown, adding_data, rectangle, calculator, create_data, get_all_templates, like_template, dislike_template, madlibs_game, get_finished_template_by_id, get_finished_data, create_finished_data, get_random_template, delete_data, update_data
 
 
 urlpatterns = [
@@ -7,14 +7,19 @@ urlpatterns = [
     path('snake', snake, name='snake'),
     path('save_score', save_score, name='save_score_api'),
     path('madlibs_game', madlibs_game, name='madlibs_game'),
-    # path('madlibs/', include('amitai.madlibs_urls')), 
+    path('hangman', rander_hangman, name='hangman'),
+    path('create_game', create_game, name='create_game'),
+    path('create_hangman_word', create_hangman_word, name='create_hangman_word'),
+    path('get_hangman_word', get_hangman_word, name='get_hangman_word'),
+    path('get_hangman_words', get_hangman_words, name='get_hangman_words'),
+    path('add_games', render_add_games, name='add_games'),
     path('adding_data', adding_data, name='adding_data'),
     path('create_data', create_data, name='create_data'),
+    path('delete_flappy_bird_score/<int:id>', delete_flappy_bird_score, name='delete_flappy_bird_score'),
     path('save_flappy_bird_score', save_flappy_bird_score, name='save_flappy_bird_score'),
     path('get_flappy_bird_score', get_flappy_bird_score, name='get_flappy_bird_score'),
     path('get_flappy_bird_top_score', get_flappy_bird_top_score, name='get_flappy_bird_top_score'),
     path('get_all_templates', get_all_templates, name='get_all_templates'),
-    path('delete_all_templates', delete_all_templates, name='delete_all_templates'),
     path('get_finished_data', get_finished_data, name='get_finished_data'),
     path('create_finished_data', create_finished_data, name='create_finished_data'),
     path('get_random_template', get_random_template, name='get_random_template'),
@@ -27,7 +32,7 @@ urlpatterns = [
     path('calculator', calculator, name='calculator'),
     path('countdown', countdown, name='countdown'),
     path('rectangle', rectangle, name='rectangle'),
-    path('main_games_senter', main_games_senter, name='main_games_senter'),
+    path('main_games_center', main_games_center, name='main_games_center'),
     path('tic_tac_toe', tic_tac_toe, name='tic_tac_toe'),
     path('flappy_bird', render_flappy_bird, name='flappy_bird'),
 

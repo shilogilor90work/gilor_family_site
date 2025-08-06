@@ -1,0 +1,30 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en"></html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Games</title>
+    <link rel="stylesheet" href="{% static 'add_games.css' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static 'add_games.js' %}"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 p-6">
+    <div class="container mx-auto max-w-6xl">
+        <h1 class="text-4xl font-extrabold text-center mb-10 text-blue-400">Add New Game</h1>
+        <form id="addGameForm" class="space-y-6">
+            <div>
+                <label for="gameName" class="block text-sm font-medium text-gray-300">Game Name</label>
+                <input placeholder=". . . . ." type="text" id="gameName" name="gameName" required class="mt-1 block w-full p-2 bg-gray-800 border border-gray-700 rounded-md focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label for="gameLink" class="block text-sm font-medium text-gray-300">add the end game link</label>
+                <textarea placeholder="e.g. amitai/add_games" type="text" id="gameLink" name="gamLink" required class="mt-1 block w-full p-2 bg-gray-800 border border-gray-700 rounded-md focus:ring-blue-500 focus:border-blue-500"></textarea>
+            </div>
+            <div>
+                <label for="gameImage" class="block text-sm font-medium text-gray-300">Game Image URL</label>
+                <input placeholder="https://example.com/image.jpg" type="text" id="gameImage" name="gameImage" required class="mt-1 block w-full p-2 bg-gray-800 border border-gray-700 rounded-md focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <button id="submit" type="submit" class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md">Add Game</button>
+        </form>
+    </div>

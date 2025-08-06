@@ -9,7 +9,9 @@ from .serializers import MadlibsSerializer
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
 from .models import madlibs
+from .models import hangman_words
 from .models import GameRecord
+from .models import game_links
 import random
 from .models import madlibs_user_history, flappy_bird
 def api_home(request):
@@ -349,21 +351,6 @@ def get_finished_data(request):
     else:
         return JsonResponse({'status': 'error', 'message': 'Only GET requests are allowed'}, status=405)
 
-@csrf_exempt # WARNING: Use proper CSRF protection in production!
-def delete_all_templates(request):
-    """
-    API endpoint to delete all madlibs data.
-    """
-    if request.method == 'DELETE':
-        try:
-            # Delete all madlibs records
-            madlibs.objects.all().delete()
-            return JsonResponse({'status': 'success', 'message': 'All madlibs deleted successfully'})
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
-    else:
-        return JsonResponse({'status': 'error', 'message': 'Only DELETE requests are allowed'}, status=405)
-
 class MadlibsViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows Madlibs to be viewed or edited.
@@ -481,11 +468,11 @@ def countdown(request):
     """
     return render(request, 'countdown/countdown.html')
 
-def main_games_senter(request):
+def main_games_center(request):
     """
     Renders the main games center page.
     """
-    return render(request, 'main_games_senter/main_games_senter.html')
+    return render(request, 'main_games_center/main_games_center.html')
 
 def tic_tac_toe(request):
     """
@@ -545,10 +532,128 @@ def get_flappy_bird_top_score(request):
     """
     if request.method == 'GET':
         try:
-            scores = flappy_bird.objects.all().values('user_name', 'score', 'id',).order_by('-score')[:1]  # Get top 1 scores
-            return JsonResponse(list(scores), safe=False)  # Return as a list of dictionaries
+            top_score = flappy_bird.objects.all().order_by('-score').values('user_name', 'score', 'id').first()
+            return JsonResponse(top_score, safe=False)  # Return as a list of dictionaries
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
     else:
         return JsonResponse({'status': 'error', 'message': 'Only GET requests are allowed'}, status=405)
-    
+
+def delete_flappy_bird_score(request, id):
+    """
+    API endpoint to delete a specific Flappy Bird score by ID.
+    """
+    if request.method == 'DELETE':
+        try:
+            # Fetch the Flappy Bird score record by ID
+            try:
+                flappy_score = flappy_bird.objects.get(id=id)
+            except flappy_bird.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Flappy Bird score not found'}, status=404)
+
+            # Delete the record
+            flappy_score.delete()
+            return JsonResponse({'status': 'success', 'message': 'Flappy Bird score deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only DELETE requests are allowed'}, status=405)
+
+def rander_hangman(request):
+    """
+    Renders the HTML page for the Hangman game.
+    """
+    return render(request, 'hangman/hangman.html')
+
+@csrf_exempt # WARNING: Use proper CSRF protection in production!
+def create_hangman_word(request):
+    """
+    API endpoint to create a new Hangman word.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            word = data.get('word')
+            if not isinstance(word, str) or not word.isalpha():
+                return JsonResponse({'status': 'error', 'message': 'Invalid word'}, status=400)
+
+            # Save the word to the database (assuming you have a model for Hangman words)
+            hangman_words.objects.create(word=word)  # Uncomment and adjust as needed
+
+            return JsonResponse({'status': 'success', 'message': 'Hangman word created successfully'})
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only POST requests are allowed'}, status=405)
+
+def get_hangman_word(request):
+    """
+    API endpoint to get a random Hangman word.
+    """
+    if request.method == 'GET':
+        try:
+            # Fetch a random Hangman word from the database (assuming you have a model for Hangman words)
+            word = hangman_words.objects.order_by('?').first()  # Fetch a random word from the database
+            if not word:
+                return JsonResponse({'status': 'error', 'message': 'No Hangman words available'}, status=404)
+
+            return JsonResponse({'word': word.word})  # Return the word attribute of the model
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only GET requests are allowed'}, status=405)
+
+def get_hangman_words(request):
+    """
+    API endpoint to get all Hangman words.
+    """
+    if request.method == 'GET':
+        try:
+            # Fetch all Hangman words from the database
+            words = hangman_words.objects.all().values('id', 'word')
+            return JsonResponse(list(words), safe=False)  # Return as a list of dictionaries
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only GET requests are allowed'}, status=405)
+
+def render_add_games(request):
+    """
+    Renders the HTML page for adding games.
+    """
+    return render(request, 'add_games/add_games.html')
+
+@csrf_exempt # WARNING: Use proper CSRF protection in production!
+def create_game(request):
+    """
+    API endpoint to create a new game.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            game_name = data.get('game_name')
+            game_link = data.get('game_link')
+            game_image = data.get('game_image', '')  # Optional image field
+            if not isinstance(game_name, str) or not game_name:
+                return JsonResponse({'status': 'error', 'message': 'Invalid game name'}, status=400)
+            if game_link and not isinstance(game_link, str):
+                return JsonResponse({'status': 'error', 'message': 'Invalid game link'}, status=400)
+            if game_image and not isinstance(game_image, str):
+                return JsonResponse({'status': 'error', 'message': 'Invalid game image URL'}, status=400)
+            
+            # Save the game link to the database (assuming you have a model for game links)
+            game_links.objects.create(
+                game_name=game_name,
+                game_link=game_link,  # Optional URL field
+                game_image=game_image # Optional description field
+            )
+
+            return JsonResponse({'status': 'success', 'message': 'Game created successfully'})
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only POST requests are allowed'}, status=405)

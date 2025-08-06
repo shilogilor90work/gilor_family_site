@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://127.0.0.1:8000/amitai';
+const API_BASE_URL = 'amitai';
 const CREATE_DATA_ENDPOINT = `${API_BASE_URL}/create_finished_data`;
 const GET_RANDOM_TEMPLATE = `${API_BASE_URL}/get_random_template`;
 const SAVE_STORY_API_ENDPOINT = `${API_BASE_URL}/create_finished_data`; 
