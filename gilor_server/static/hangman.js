@@ -1,4 +1,4 @@
-const api_base_url = 'amitai';
+const API_BASE_URL = 'amitai';
 const create_word_endpoint = `${API_BASE_URL}/create_hangman_word`;
 const get_word_endpoint = `${API_BASE_URL}/get_hangman_word`;
 const get_all_words_endpoint = `${API_BASE_URL}/get_hangman_words`;

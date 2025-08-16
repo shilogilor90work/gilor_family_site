@@ -1,5 +1,5 @@
 
-const CREATE_GAME_ENDPOINT = `amitai/create_game`;
+const CREATE_GAME_ENDPOINT = `create_game`;
 
 async function createGame(gameData) {
     try {
@@ -32,16 +32,16 @@ addEventListener('submit', async (event) => {
     event.preventDefault(); // Prevent default form submission
 
     const gameData = {
-        game_name: game_name,
-        game_link: game_link,
-        game_image: game_image,
+        gameName: game_name.value,
+        gameLink: game_link.value,
+        gameImage: game_image.value,
     };
 
     try {
         const createdGame = await createGame(gameData);
-        displayMessage(`Game created successfully: ${createdGame.name}`, 'success');
+        displayMessage(`Game submiting successfully: ${createdGame.name}`, 'success');
     } catch (error) {
-        displayMessage(`Error creating game: ${error.message}`, 'error');
+        displayMessage(`Error submiting game: ${error.message}`, 'error');
     }
 }
 );

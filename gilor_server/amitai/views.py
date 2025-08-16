@@ -633,9 +633,9 @@ def create_game(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            game_name = data.get('game_name')
-            game_link = data.get('game_link')
-            game_image = data.get('game_image', '')  # Optional image field
+            game_name = data.get('gameName', 'undifined')
+            game_link = data.get('gameLink', 'undifined')
+            game_image = data.get('gameImage', f'https:placehold.co/400x250/FF5733/FFFFFF?text={game_name}')  # Optional image field
             if not isinstance(game_name, str) or not game_name:
                 return JsonResponse({'status': 'error', 'message': 'Invalid game name'}, status=400)
             if game_link and not isinstance(game_link, str):
@@ -657,3 +657,17 @@ def create_game(request):
             return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
     else:
         return JsonResponse({'status': 'error', 'message': 'Only POST requests are allowed'}, status=405)
+
+def get_game_info(request):
+    """
+    API endpoint to get all games info
+    """
+    if request.method == 'GET':
+        try:
+            # Fetch all Hangman words from the database
+            game_info = game_links.objects.all().values('id', 'game_name', 'game_image', 'game_link')
+            return JsonResponse(list(game_info), safe=False)  # Return as a list of dictionaries
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only GET requests are allowed'}, status=405)

@@ -1,52 +1,30 @@
-const gameGallery = document.getElementById('game-gallery');
 
-const games = [
-    {
-        imageSrc: "https:placehold.co/400x250/FF5733/FFFFFF?text=Madlibs", // <--- ADD YOUR IMAGE URL HERE
-        name: "Madlibs", // <--- ADD YOUR GAME NAME HERE
-        gamePath: "/amitai/madlibs_game" // <--- ADD YOUR GAME PATH (URL) HERE
-    },
-    {
-        imageSrc: "https://placehold.co/400x250/33FF57/000000?text=Two+Player+Password", // <--- ADD YOUR IMAGE URL HERE
-        name: "Two Player Password", // <--- ADD YOUR GAME NAME HERE
-        gamePath: "/amitai/two_player" // <--- ADD YOUR GAME PATH (URL) HERE
-    },
-    {
-        imageSrc: "https://placehold.co/400x250/3357FF/FFFFFF?text=Snake", // <--- ADD YOUR IMAGE URL HERE
-        name: "Snake", // <--- ADD YOUR GAME NAME HERE
-        gamePath: "/amitai/snake" // <--- ADD YOUR GAME PATH (URL) HERE
-    },
-    {
-        imageSrc: "https://placehold.co/400x250/335754/FFFFFF?text=Rectangle", // <--- ADD YOUR IMAGE URL HERE
-        name: "Rectangle",
-        gamePath: "/amitai/rectangle"
-    },
-    {
-        imageSrc: "https://placehold.co/400x250/AAAAAA/000000?text=Countdown",
-        name: "Countdown",
-        gamePath: "/amitai/countdown"
-    },
-    {
-        imageSrc: "https://placehold.co/400x250/FFAA33/FFFFFF?text=Calculator",
-        name: "Calculator",
-        gamePath: "/amitai/calculator"
-    },
-    {
-        imageSrc: "https://placehold.co/400x250/33AAFF/FFFFFF?text=Tic Tac Toe",
-        name: "Tic Tac Toe",
-        gamePath: "/amitai/tic_tac_toe"
-    },
-    {
-        imageSrc: "https://placehold.co/400x250/FF33AA/FFFFFF?text=Flappy Bird",
-        name: "Flappy Bird",
-        gamePath: "/amitai/flappy_bird"
-    },
-    {
-        imageSrc: "https://placehold.co/400x250/FF33FF/FFFFFF?text=Hangman",
-        name: "Hangman",
-        gamePath: "/amitai/hangman"
+const get_games_endpoint = `get_game_info`;
+
+async function fetchGames() {
+    try {
+        const response = await fetch(get_games_endpoint, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `API error: ${response.status}`);
+        }
+        const data = await response.json();
+        return Array.isArray(data) ? data : (data.games || []);
+    } catch (error) {
+        console.error(`Error fetching games:`, error);
+        displayMessage(`Error fetching games: ${error.message}`, 'error');
+        throw error;
     }
-];
+}
+
+
+
+const gameGallery = document.getElementById('game-gallery');
 
 
 function searchGames() {
@@ -88,7 +66,7 @@ function searchGames() {
     
         // Filter the games array
         const filteredGames = games.filter(game => 
-        game.name.toLowerCase().includes(searchInput)
+        game.game_name.toLowerCase().includes(searchInput)
         );
         filteredGames.forEach(game => {
             const card = createGameCard(game);
@@ -106,14 +84,14 @@ function createGameCard(game) {
 
     // Create the image element
     const img = document.createElement('img');
-    img.src = game.imageSrc;
-    img.alt = game.name;
+    img.src = game.game_image; // Fallback image if not available
+    img.alt = game.game_name; // Fallback alt text if game_name is not available
     img.className = 'w-full h-48 object-cover rounded-t-lg'; // Tailwind classes for image styling
 
     // Create the game name overlay element
     const gameName = document.createElement('div');
     gameName.className = 'game-name'; // Custom CSS class for styling and hover effect
-    gameName.textContent = game.name;
+    gameName.textContent = game.game_name;
 
     // Append image and name to the game card
     gameCard.appendChild(img);
@@ -121,16 +99,20 @@ function createGameCard(game) {
 
     // Add click event listener to redirect to the game path
     gameCard.addEventListener('click', () => {
-        window.location.href = game.gamePath;
+        window.location.href = game.game_link; // Use game_link if available, otherwise fallback to gamePath
     });
 
     return gameCard;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Loop through the games array and add each game to the gallery
-    games.forEach(game => {
-        const card = createGameCard(game);
-        gameGallery.appendChild(card);
-    });
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const games = await fetchGames(); // ✅ wait for fetch to finish
+        games.forEach(game => {
+            const card = createGameCard(game);
+            gameGallery.appendChild(card);
+        });
+    } catch (error) {
+        console.error("Could not load games:", error);
+    }
 });
