@@ -1,9 +1,11 @@
 from django.urls import path
-from .views import api_home, snake, render_add_games, get_game_info, create_game, save_score, create_hangman_word, get_hangman_word, get_hangman_words, delete_flappy_bird_score, rander_hangman, get_flappy_bird_score, get_flappy_bird_top_score, save_flappy_bird_score, tic_tac_toe, render_flappy_bird, main_games_center, two_player, countdown, adding_data, rectangle, calculator, create_data, get_all_templates, like_template, dislike_template, madlibs_game, get_finished_template_by_id, get_finished_data, create_finished_data, get_random_template, delete_data, update_data
+from .views import api_home, delete_game_data, render_pong, snake, render_add_games, get_game_info, create_game, save_score, create_hangman_word, get_hangman_word, get_hangman_words, delete_flappy_bird_score, rander_hangman, get_flappy_bird_score, get_flappy_bird_top_score, save_flappy_bird_score, tic_tac_toe, render_flappy_bird, main_games_center, two_player, countdown, adding_data, rectangle, calculator, create_data, get_all_templates, like_template, dislike_template, madlibs_game, get_finished_template_by_id, get_finished_data, create_finished_data, get_random_template, delete_data, update_data
 
 
 urlpatterns = [
     path('', api_home),
+    path('pong', render_pong, name='pong'),
+    path('delete_game_data/<int:id>', delete_game_data, name='delete_game_data'),
     path('snake', snake, name='snake'),
     path('save_score', save_score, name='save_score_api'),
     path('madlibs_game', madlibs_game, name='madlibs_game'),

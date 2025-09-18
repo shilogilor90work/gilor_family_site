@@ -57,7 +57,7 @@ function searchGames() {
         resultsList.innerHTML = '<h1 class="text-2xl text-red-500 font-bold">the best sis ever!!!</h1>';
     }
     else if (searchInput === 'the game!!!!!!!!!!!!!!!!!!!!!!!!!!') {
-        resultsList.innerHTML = '<h1 class="text-2xl text-red-500 font-bold">OH NOOOOOO!!! THEY FOUND OUT!!!</h1>';
+        resultsList.innerHTML = '<h1 class="text-2xl text-red-500 font-bold">OH NOOOOOO!!! \nTHEY FOUND OUT!!!</h1>';
     }
     else {
     // Get the results list element

@@ -671,3 +671,28 @@ def get_game_info(request):
             return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
     else:
         return JsonResponse({'status': 'error', 'message': 'Only GET requests are allowed'}, status=405)
+
+def render_pong(request):
+    """
+    Renders the HTML page for the Pong game.
+    """
+    return render(request, 'pong/pong.html')
+def delete_game_data(request, id):
+    """
+    API endpoint to delete a specific game by ID.
+    """
+    if request.method == 'DELETE':
+        try:
+            # Fetch the game record by ID
+            try:
+                game = game_links.objects.get(id=id)
+            except game_links.DoesNotExist:
+                return JsonResponse({'status': 'error', 'message': 'Game not found'}, status=404)
+
+            # Delete the record
+            game.delete()
+            return JsonResponse({'status': 'success', 'message': 'Game deleted successfully'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
+    else:
+        return JsonResponse({'status': 'error', 'message': 'Only DELETE requests are allowed'}, status=405)

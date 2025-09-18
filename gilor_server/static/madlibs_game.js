@@ -1,4 +1,4 @@
-const API_BASE_URL = 'amitai';
+const API_BASE_URL = '/amitai';
 const CREATE_DATA_ENDPOINT = `${API_BASE_URL}/create_finished_data`;
 const GET_RANDOM_TEMPLATE = `${API_BASE_URL}/get_random_template`;
 const SAVE_STORY_API_ENDPOINT = `${API_BASE_URL}/create_finished_data`; 

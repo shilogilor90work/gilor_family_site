@@ -1,0 +1,36 @@
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #222;
+    color: #fff;
+    font-family: 'Press Start 2P', cursive; /* Optional: for a retro feel, you'll need to link this font in HTML */
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+#startButton {
+    padding: 10px 20px;
+    background-color: #fff;
+    color: #222;
+    border: none;
+    border-radius: 5px;
+    font-family: 'Press Start 2P', cursive;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+#startButton:hover {
+    background-color: #222;
+    color: #fff;
+}
+
+canvas {
+    border: 2px solid #fff;
+    background-color: #000;
+    display: block; /* Removes extra space below canvas */
+}
