@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Cave Platformer — Tunnel Words + Top Word</title>
+<style>
+  html,body{height:100%;margin:0;background:#0b0b0d;color:#ddd;font-family:monospace}
+  #wrap{display:flex;flex-direction:column;align-items:center;padding:10px}
+  canvas{image-rendering:pixelated;border:6px solid #111;background:#050507}
+  .ui{margin-top:8px;display:flex;gap:12px;align-items:center}
+  .ui .label{opacity:.8}
+  button{padding:6px 10px;border-radius:6px;border:1px solid #333;background:#121212;color:#eee}
+  a.small{font-size:12px;color:#9df}
+</style>
+</head>
+<body>
+  {{ word_data|json_script:"wordData" }}
+<div id="wrap">
+  <canvas id="game" width="480" height="270"></canvas>
+  <div class="ui">
+    <div class="label">Lives: <span id="lives">3</span></div>
+    <div class="label">Level: <span id="level">1</span></div>
+    <div class="label">Enemies: <span id="enemies">0</span></div>
+    <button id="debugBtn">Toggle Debug</button>
+    <a class="small" href="#" id="restart">Restart Game</a>
+  </div>
+  <button id="pauseBtn" style="margin-top:8px;">Pause</button>
+  <div style="margin-top:6px;font-size:12px;opacity:.7">Controls: A/D or ←/→, W or ↑ to jump, Space to slash</div>
+</div>
+
+<script>
+  // Load Django data
+  const wordData = JSON.parse(document.getElementById('wordData').textContent);
+  const ARAMAIC_WORDS = Object.keys(wordData);
+  const HEBREW_WORDS = Object.values(wordData);
+
+  /* CONFIG */
+  const CONFIG = {
+    SCALE: 2,
+    GRAVITY: 0.45,
+    PLAYER_SPEED: 1.6,
+    PLAYER_JUMP: 7.2,
+    PLAYER_WIDTH: 12,
+    PLAYER_HEIGHT: 18,
+    INVINCIBLE_TIME: 3000,
+    SLASH_COOLDOWN: 350,
+    SLASH_RANGE: 18,
+    SLASH_DURATION: 120,
+    ENEMY_HEALTH: 2,
+    LEVEL_WIDTH_TILES: 60,
+    TILE_SIZE: 8,
+    TUNNEL_COUNT: 3,
+    CANVAS_W: 480,
+    CANVAS_H: 270,
+  };
+
+  /* Canvas setup */
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  canvas.style.width = (CONFIG.CANVAS_W * CONFIG.SCALE) + 'px';
+  canvas.style.height = (CONFIG.CANVAS_H * CONFIG.SCALE) + 'px';
+  ctx.imageSmoothingEnabled = false;
+
+  /* State */
+  let debug = false;
+  let levelNumber = 1;
+  let enemies = [];
+  let platforms = [];
+  let tunnels = [];
+  let correctTunnelIndex = 0;
+  let redFlash = 0;
+  let paused = false;
+  let pauseOverlayAlpha = 0;
+  let topWord = "";
+  let correctTunnelHighlightUntil = 0; // timestamp until we show the highlight
+
+
+  const player = {x:40,y:200,vx:0,vy:0,w:CONFIG.PLAYER_WIDTH,h:CONFIG.PLAYER_HEIGHT,facing:1,onGround:false,invincibleUntil:0,blinkTimer:0,slashUntil:0,lastSlash:0,lives:3};
+  const keys = {};
+  window.addEventListener('keydown', e=>{
+    const k=e.key.toLowerCase();
+    if(['a','d','w','arrowleft','arrowright','arrowup',' ','k'].includes(k)) e.preventDefault();
+    keys[k]=true;
+  });
+  window.addEventListener('keyup', e=>{keys[e.key.toLowerCase()]=false;});
+  function now(){return performance.now();}
+  function randRange(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+
+  /* Level generation */
+  function generateLevel(n){
+    platforms=[]; enemies=[]; tunnels=[];
+    const W=CONFIG.CANVAS_W,H=CONFIG.CANVAS_H;
+
+    // pick random Aramaic word
+    const randomIndex = randRange(0, ARAMAIC_WORDS.length-1);
+    topWord = ARAMAIC_WORDS[randomIndex];
+    const correctTranslation = wordData[topWord];
+
+    // ground
+    platforms.push({x:0,y:H-32,w:W,h:32});
+
+    // floating platforms
+    const platCount=7+Math.min(10,Math.floor(n/2));
+    for(let i=0;i<platCount;i++){
+      const w=randRange(80,160);
+      const x=randRange(20,W-20-w);
+      const y=randRange(60,H-80);
+      platforms.push({x,y,w,h:10});
+    }
+
+    // enemies
+    platforms.forEach(p=>{
+      if(Math.random()<0.6)return;
+      const px=Math.max(8,Math.min(CONFIG.CANVAS_W-20,p.x+randRange(8,Math.max(8,p.w-16))));
+      const types=['red','blue','green'];
+      enemies.push(createEnemy(types[randRange(0,types.length-1)],px,p.y-18));
+    });
+
+    // tunnels
+    const tunnelY=randRange(60,H-80);
+    const baseX=W-110;
+    for(let i=0;i<CONFIG.TUNNEL_COUNT;i++) tunnels.push({x:baseX+i*40,y:tunnelY,w:32,h:48});
+    correctTunnelIndex=Math.floor(Math.random()*tunnels.length);
+
+    // assign Hebrew words
+    tunnels.forEach((t,i)=>{
+      if(i===correctTunnelIndex) t.word = correctTranslation;
+      else t.word = HEBREW_WORDS[randRange(0, HEBREW_WORDS.length-1)];
+    });
+
+    player.x=32; player.y=H-64; player.vx=0; player.vy=0; player.facing=1;
+    updateUI();
+  }
+
+  function createEnemy(color,x,y){return {color,x,y,vx:(Math.random()<0.5?0.4:-0.4),vy:0,w:12,h:12,type:color,health:CONFIG.ENEMY_HEALTH};}
+  function rectIntersect(a,b){return !(a.x+a.w<b.x||a.x>b.x+b.w||a.y+a.h<b.y||a.y>b.y+b.h);}
+
+  function moveEntity(ent,dt){
+    ent.vy+=CONFIG.GRAVITY*dt; ent.x+=ent.vx*dt; ent.y+=ent.vy*dt; ent.onGround=false;
+    for(const p of platforms){
+      if(rectIntersect(ent,p)){
+        if(ent.vy>0&&(ent.y+ent.h-ent.vy*dt)<=p.y+0.5){ent.y=p.y-ent.h;ent.vy=0;ent.onGround=true;}
+        else if(ent.vy<0&&ent.y>=p.y+p.h-1){ent.y=p.y+p.h;ent.vy=0;}
+        else{if(ent.vx>0)ent.x=p.x-ent.w-0.01;else if(ent.vx<0)ent.x=p.x+p.w+0.01;if(ent!==player)ent.vx*=-1;}
+      }
+    }
+    if(ent.x<=0){ent.x=0;if(ent!==player)ent.vx*=-1;}
+    if(ent.x+ent.w>=CONFIG.CANVAS_W){ent.x=CONFIG.CANVAS_W-ent.w;if(ent!==player)ent.vx*=-1;}
+    if(ent.y>CONFIG.CANVAS_H+200){if(ent!==player){ent.y=-10;ent.vy=0;}else resetLevelAfterDeath();}
+  }
+
+  function updateEnemies(dt){
+    for(const e of enemies){
+      if(e.type==='red'){if(Math.abs(e.vx)<0.15)e.vx=(Math.random()<0.5?0.4:-0.4);}
+      else if(e.type==='blue'){e.vx=Math.sign(e.vx||1)*0.6;}
+      else if(e.type==='green'){
+        e.vx=Math.sign(e.vx||1)*0.25;
+        const nextX=e.x+(e.vx>0?e.w+1:-1),footY=e.y+e.h+2;
+        let onPlatform=false;
+        for(const p of platforms){
+          if(nextX>=p.x&&nextX<=p.x+p.w&&footY>=p.y&&footY<=p.y+6){onPlatform=true;break;}
+        }
+        if(!onPlatform)e.vx*=-1;
+      }
+      moveEntity(e,dt);
+    }
+  }
+
+  function updatePlayer(dt){
+    // freeze player if correct tunnel highlight is active
+    if(now() < correctTunnelHighlightUntil) return;
+
+    const left=keys['a']||keys['arrowleft'], right=keys['d']||keys['arrowright'];
+    if(left&&!right){player.vx=-CONFIG.PLAYER_SPEED;player.facing=-1;}
+    else if(right&&!left){player.vx=CONFIG.PLAYER_SPEED;player.facing=1;}
+    else player.vx=0;
+
+    const up=keys['w']||keys['arrowup'];
+    if(up&&player.onGround){player.vy=-CONFIG.PLAYER_JUMP;player.onGround=false;}
+
+    moveEntity(player,dt);
+
+    if((keys[' ']||keys['k']) && now()-player.lastSlash>CONFIG.SLASH_COOLDOWN){
+      player.lastSlash=now();
+      player.slashUntil=now()+CONFIG.SLASH_DURATION;
+    }
+  }
+
+
+  function handleSlashes(){
+    if(now()<player.slashUntil){
+      const sl={x:player.facing>0?player.x+player.w:player.x-CONFIG.SLASH_RANGE,y:player.y+4,w:CONFIG.SLASH_RANGE,h:player.h-8};
+      for(const e of enemies){if(e.health>0&&rectIntersect(e,sl)){e.health-=1;e.vx=(e.x<player.x)?-1:1;}}
+      enemies=enemies.filter(e=>e.health>0);
+    }
+  }
+
+  function handleDamage(){
+    if(now()<player.invincibleUntil)return;
+    for(const e of enemies){
+      if(rectIntersect(player,e)){
+        player.lives--;document.getElementById('lives').innerText=player.lives;
+        player.invincibleUntil=now()+CONFIG.INVINCIBLE_TIME;player.blinkTimer=now();
+        player.vy=-CONFIG.PLAYER_JUMP*1.2;player.vx=(player.x<e.x?-CONFIG.PLAYER_SPEED:CONFIG.PLAYER_SPEED)*1.5;
+        if(player.lives<=0){flashRed(700);resetLevelAfterDeath();return;}
+        break;
+      }
+    }
+  }
+
+
+
+  function resetLevelAfterDeath(){player.x=32;player.y=CONFIG.CANVAS_H-64;player.vx=0;player.vy=0;player.lives=3;document.getElementById('lives').innerText=3;}
+  function flashRed(ms){redFlash=ms;}
+  function checkTunnels(){
+    for(let i=0;i<tunnels.length;i++){
+      const t=tunnels[i];
+      if(rectIntersect(player,t)){
+        if(i===correctTunnelIndex){
+          levelNumber++;
+          document.getElementById('level').innerText = levelNumber;
+          generateLevel(levelNumber);
+          try {
+            // Remove used word to avoid repetition
+            const wordIndex = ARAMAIC_WORDS.indexOf(topWord);
+            if (wordIndex !== -1) {
+              ARAMAIC_WORDS.splice(wordIndex, 1);
+            }
+          } catch (e) {
+            console.error("Error removing used word:", e);
+          }
+        } else {
+          flashRed(800);
+        // highlight correct tunnel for 1.2s
+          correctTunnelHighlightUntil = now() + 1200;
+          // delay moving to next level slightly to show highlight
+          setTimeout(() => {
+            generateLevel(levelNumber);
+          }, 1200);
+        }
+        return;
+      }
+    }
+  }
+
+
+  /* DRAW */
+  function draw(){
+    const W=CONFIG.CANVAS_W,H=CONFIG.CANVAS_H;
+    ctx.clearRect(0,0,W,H);
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#061018');g.addColorStop(1,'#020203');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+
+    // top word (Aramaic)
+    ctx.fillStyle='#0f0';
+    ctx.font='bold 16px monospace';
+    ctx.textAlign='center';
+    ctx.textBaseline='top';
+    ctx.fillText(topWord, W/2, 4);
+
+    // platforms
+    for(const p of platforms){
+      ctx.fillStyle='#3b3026';ctx.fillRect(p.x,p.y,p.w,p.h);
+      ctx.fillStyle='#6b5b4a';ctx.fillRect(p.x,p.y,p.w,3);
+    }
+
+      // tunnels
+  tunnels.forEach((t,i)=>{
+    // highlight correct tunnel if needed
+    if(i===correctTunnelIndex && now() < correctTunnelHighlightUntil){
+      ctx.fillStyle = '#0f0'; // green highlight
+    } else {
+      ctx.fillStyle = '#091012';
+    }
+    ctx.fillRect(t.x,t.y,t.w,t.h);
+
+    ctx.strokeStyle='#555';ctx.lineWidth=2;ctx.strokeRect(t.x+1,t.y+1,t.w-2,t.h-2);
+    ctx.fillStyle='#fff';ctx.font='10px monospace';
+    const tw=ctx.measureText(t.word).width;
+    ctx.fillText(t.word,t.x+(t.w-tw)/2,t.y+t.h/2+4);
+  });
+
+
+    enemies.forEach(e=>{
+      if(e.color==='red')ctx.fillStyle='#c54a4a';
+      else if(e.color==='blue')ctx.fillStyle='#5aa6ff';
+      else ctx.fillStyle='#5fffa1';
+      ctx.fillRect(e.x,e.y,e.w,e.h);
+    });
+
+    const inv=now()<player.invincibleUntil;
+    if(!inv||Math.floor(now()/120)%2===0){ctx.fillStyle='#ffd98b';ctx.fillRect(player.x,player.y,player.w,player.h);}
+    if(now()<player.slashUntil){const sx=player.facing>0?player.x+player.w:player.x-CONFIG.SLASH_RANGE;ctx.fillStyle='rgba(255,220,170,0.9)';ctx.fillRect(sx,player.y+4,CONFIG.SLASH_RANGE,player.h-8);}
+    if(redFlash>0){ctx.fillStyle='rgba(255,30,30,0.25)';ctx.fillRect(0,0,W,H);}
+  }
+
+  /* LOOP */
+  let lastTime=now();
+  function loop(){
+    const t=now(),rawDt=t-lastTime;lastTime=t;
+    const dtFrame=Math.min(60,rawDt)/16.6667;
+    if(!paused){updatePlayer(dtFrame);updateEnemies(dtFrame);handleSlashes();handleDamage();checkTunnels();}
+    if(redFlash>0)redFlash=Math.max(0,redFlash-rawDt);
+    draw();
+    if(paused){
+      pauseOverlayAlpha=Math.min(0.5,pauseOverlayAlpha+0.05);
+      ctx.fillStyle=`rgba(0,0,0,${pauseOverlayAlpha})`;ctx.fillRect(0,0,CONFIG.CANVAS_W,CONFIG.CANVAS_H);
+      ctx.fillStyle="#fff";ctx.font="16px monospace";ctx.fillText("PAUSED",CONFIG.CANVAS_W/2-30,CONFIG.CANVAS_H/2);
+    }else pauseOverlayAlpha=Math.max(0,pauseOverlayAlpha-0.05);
+    document.getElementById('enemies').innerText=enemies.length;
+    requestAnimationFrame(loop);
+  }
+
+  /* UI */
+  document.getElementById('debugBtn').addEventListener('click',()=>{debug=!debug;document.getElementById('debugBtn').innerText=debug?'Debug On':'Toggle Debug';});
+  document.getElementById('restart').addEventListener('click',e=>{e.preventDefault();levelNumber=1;player.lives=3;document.getElementById('lives').innerText=3;generateLevel(1);});
+  document.getElementById('pauseBtn').addEventListener('click',()=>{paused=!paused;document.getElementById('pauseBtn').innerText=paused?'Resume':'Pause';});
+  function updateUI(){document.getElementById('lives').innerText=player.lives;document.getElementById('level').innerText=levelNumber;document.getElementById('enemies').innerText=enemies.length;}
+
+  /* INIT */
+  player.lives=3;generateLevel(levelNumber);loop();
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Word Manager</title>
+    <style>
+        body { font-family: monospace; background:#0b0b0d; color:#ddd; padding:20px; }
+        .box { background:#151515; padding:15px; margin-bottom:15px; border-radius:8px; }
+        input, textarea { width:100%; padding:6px; margin:5px 0; }
+        button { padding:6px 10px; margin-top:5px; cursor:pointer; }
+        table { width:100%; border-collapse:collapse; }
+        td, th { border:1px solid #333; padding:6px; }
+    </style>
+</head>
+<body>
+
+<h2>Word Manager</h2>
+
+<!-- SINGLE ADD -->
+<div class="box">
+    <h3>Add Single Word</h3>
+    <form method="POST" action="/amitai/words/add/">
+        {% csrf_token %}
+        <input name="aramaic" placeholder="Aramaic word">
+        <input name="hebrew" placeholder="Hebrew translation">
+        <button>Add</button>
+    </form>
+</div>
+
+<!-- BULK ADD -->
+<div class="box">
+    <h3>Bulk Add (format: aramaic=hebrew)</h3>
+    <form method="POST" action="/amitai/words/bulk/">
+        {% csrf_token %}
+        <textarea name="bulk_text" rows="6" placeholder="shalma=שלום"></textarea>
+        <button>Bulk Insert</button>
+    </form>
+</div>
+
+<!-- LIST -->
+<div class="box">
+    <h3>Existing Words ({{ words|length }})</h3>
+
+    <table>
+        <tr>
+            <th>Aramaic</th>
+            <th>Hebrew</th>
+            <th>Actions</th>
+        </tr>
+
+        {% for w in words %}
+        <tr>
+            <td>{{ w.aramaic_word }}</td>
+            <td>{{ w.hebrew_translation }}</td>
+            <td>
+                <a href="/amitai/words/update/{{ w.id }}/">Edit</a> |
+                <a href="/amitai/words/delete/{{ w.id }}/">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+</body>
+</html>

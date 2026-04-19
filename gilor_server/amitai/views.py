@@ -14,6 +14,9 @@ from .models import GameRecord
 from .models import game_links
 import random
 from .models import madlibs_user_history, flappy_bird
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import aramaic_words
+
 def api_home(request):
     return JsonResponse({"message": "Welcome to the API"})
 
@@ -696,3 +699,73 @@ def delete_game_data(request, id):
             return JsonResponse({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}, status=500)
     else:
         return JsonResponse({'status': 'error', 'message': 'Only DELETE requests are allowed'}, status=405)
+    
+def render_shootsandladders(request):
+    """
+    Renders the HTML page for the Shoots and Ladders game.
+    """
+    return render(request, 'shootsaandlatters/shootsandlaters.html')
+
+from django.shortcuts import render
+from amitai.models import aramaic_words, hebrew_words
+import random
+
+def render_jump(request):
+    """
+    Renders the HTML page for the Jump game with DB-sourced words.
+    """
+    # Get all words from 
+    word_data = {entry.aramaic_word: entry.hebrew_translation for entry in aramaic_words.objects.all()}
+    return render(request, 'jump/jump.html', {
+        'word_data': word_data,
+    })
+
+# MAIN PANEL
+def words_panel(request):
+    words = aramaic_words.objects.all().order_by("-id")
+    return render(request, "words/panel.html", {"words": words})
+
+
+# SINGLE ADD
+def add_word(request):
+    if request.method == "POST":
+        aramaic_words.objects.create(
+            aramaic_word=request.POST["aramaic"],
+            hebrew_translation=request.POST["hebrew"]
+        )
+    return redirect("words_panel")
+
+
+# DELETE
+def delete_word(request, pk):
+    aramaic_words.objects.filter(id=pk).delete()
+    return redirect("words_panel")
+
+
+# UPDATE
+def update_word(request, pk):
+    word = get_object_or_404(aramaic_words, id=pk)
+
+    if request.method == "POST":
+        word.aramaic_word = request.POST["aramaic"]
+        word.hebrew_translation = request.POST["hebrew"]
+        word.save()
+        return redirect("words_panel")
+
+    return render(request, "words/update.html", {"word": word})
+
+
+# BULK ADD (format: aramaic=hebrew per line)
+def bulk_add(request):
+    if request.method == "POST":
+        data = request.POST["bulk_text"].strip().split("\n")
+
+        for line in data:
+            if "=" in line:
+                aramaic, hebrew = line.split("=", 1)
+                aramaic_words.objects.create(
+                    aramaic_word=aramaic.strip(),
+                    hebrew_translation=hebrew.strip()
+                )
+
+    return redirect("words_panel")

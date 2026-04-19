@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Snakes & Ladders — HTML Game</title>
+  <style>
+    :root{--size:48px;--board-gap:6px;--accent:#2b8aef;--bg:#0f1724}
+    *{box-sizing:border-box}
+    body{font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;display:flex;min-height:100vh;margin:0;background:linear-gradient(180deg,var(--bg),#071024);color:#e6eef8;align-items:center;justify-content:center}
+    .wrap{display:flex;gap:24px;padding:24px;align-items:flex-start}
+    .board{display:grid;grid-template-columns:repeat(10,calc(var(--size)));grid-auto-rows:calc(var(--size));gap:6px;background:linear-gradient(180deg,#0b2540,#0a2540);padding:8px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,.6);}
+    .cell{width:var(--size);height:var(--size);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;border-radius:6px;position:relative}
+    .cell:nth-child(odd){background:linear-gradient(180deg,#fff2,#0000)}
+    .cell:nth-child(even){background:linear-gradient(180deg,#0000,#0000)}
+    .cell .num{position:absolute;left:4px;top:4px;font-size:10px;color:#bcd7ff}
+    .controls{width:320px;padding:16px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));box-shadow:0 6px 20px rgba(2,6,23,.5)}
+    h1{margin:6px 0 10px;font-size:18px}
+    button{background:var(--accent);border:0;padding:10px 12px;border-radius:8px;color:white;font-weight:700;cursor:pointer}
+    .btn-secondary{background:#23384f}
+    .status{margin:12px 0;padding:10px;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);font-size:14px}
+    .players{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    .player{display:flex;gap:8px;align-items:center}
+    .token{width:20px;height:20px;border-radius:50%;display:inline-block;border:2px solid #072033}
+    .dice{font-size:42px;font-weight:900;text-align:center}
+    .legend{font-size:12px;margin-top:10px;color:#a9c3e8}
+    .footer{margin-top:12px;font-size:12px;color:#9fb6dd}
+    .setup{margin-bottom:16px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px}
+    .setup label{display:block;margin:6px 0 2px;font-size:13px}
+    select,input{padding:4px;border-radius:6px;border:1px solid #345;width:100%;background:#0c1522;color:#e6eef8}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="board-overlay">
+      <div id="board" class="board" aria-label="snakes and ladders board"></div>
+    </div>
+
+    <div class="controls">
+      <h1>Snakes & Ladders</h1>
+
+      <div class="setup" id="setup">
+        <label for="numPlayers">Number of Players:</label>
+        <select id="numPlayers">
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+        <label for="numRobots">Number of Robots (AI):</label>
+        <select id="numRobots">
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+        </select>
+        <button id="startBtn">Start Game</button>
+      </div>
+
+      <div class="players" id="players"></div>
+
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+        <button id="rollBtn" disabled>Roll 🎲</button>
+        <button id="resetBtn" class="btn-secondary" disabled>Reset</button>
+      </div>
+
+      <div class="status" id="status">Configure game and press Start.</div>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:10px">
+        <div class="dice" id="dice">-</div>
+        <div>
+          <div class="legend" id="legend"></div>
+          <div class="footer">First to reach 100 wins. Land on a ladder to climb, or a snake to slide down.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const boardEl = document.getElementById('board');
+    const rollBtn = document.getElementById('rollBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const statusEl = document.getElementById('status');
+    const diceEl = document.getElementById('dice');
+    const playersEl = document.getElementById('players');
+    const legendEl = document.getElementById('legend');
+    const startBtn = document.getElementById('startBtn');
+    const numPlayersEl = document.getElementById('numPlayers');
+    const numRobotsEl = document.getElementById('numRobots');
+
+    const cells = [];
+    for(let row=9; row>=0; row--){
+      const leftToRight = (9 - row) % 2 === 0;
+      if(leftToRight){
+        for(let col=0; col<10; col++) cells.push(row*10 + col +1);
+      } else {
+        for(let col=9; col>=0; col--) cells.push(row*10 + col +1);
+      }
+    }
+
+    cells.forEach(num => {
+      const el = document.createElement('div');
+      el.className = 'cell';
+      el.dataset.num = num;
+      el.innerHTML = `<span class="num">${num}</span>`;
+      boardEl.appendChild(el);
+    });
+
+    const jumps = {
+      4:14, 9:31, 20:38, 28:84, 40:59, 51:67, 63:81, 71:91,
+      16:6, 48:30, 49:11, 56:53, 62:19, 64:60, 87:24, 93:73, 95:75, 98:78
+    };
+
+    for(const [s,e] of Object.entries(jumps)){
+      const start = parseInt(s,10);
+      const el = document.querySelector(`.cell[data-num='${start}']`);
+      if(!el) continue;
+      const up = jumps[start] > start;
+      const txt = up ? `L→${jumps[start]}` : `S→${jumps[start]}`;
+      const marker = document.createElement('div');
+      marker.className = 'marker small';
+      marker.textContent = txt;
+      marker.title = up ? `Ladder to ${jumps[start]}` : `Snake to ${jumps[start]}`;
+      marker.style.right = '4px';
+      marker.style.bottom = '4px';
+      el.appendChild(marker);
+    }
+
+    let positions = [];
+    let current = 0;
+    let playing = false;
+    let robots = [];
+    let colors = ['#ffb86b','#7ee787','#8be9fd','#ff79c6'];
+
+    function updateBoard(){
+      document.querySelectorAll('.cell .token-vis').forEach(t=>t.remove());
+      positions.forEach((p,idx)=>{
+        const el = document.querySelector(`.cell[data-num='${p}']`);
+        if(!el) return;
+        const token = document.createElement('span');
+        token.className = 'token-vis';
+        token.style.position = 'absolute';
+        token.style.width = '16px';
+        token.style.height = '16px';
+        token.style.borderRadius = '50%';
+        token.style.border = '2px solid #072033';
+        token.style.transform = 'translate(-50%,-50%)';
+        token.style.background = colors[idx % colors.length];
+        token.style.left = `${30 + (idx%2)*40}%`;
+        token.style.top = `${30 + (Math.floor(idx/2))*40}%`;
+        el.appendChild(token);
+      });
+      legendEl.textContent = positions.map((p,i)=>`P${i+1}:${p}`).join(' | ');
+    }
+
+    function rollDice(){
+      if(!playing) return;
+      rollBtn.disabled = true;
+      let frames = 12;
+      const spin = setInterval(()=>{
+        diceEl.textContent = Math.floor(Math.random()*6)+1;
+        frames--;
+        if(frames<=0){
+          clearInterval(spin);
+          const value = parseInt(diceEl.textContent,10);
+          moveCurrent(value);
+        }
+      },80);
+    }
+
+    function moveCurrent(value){
+      let pos = positions[current];
+      pos += value;
+      if(pos>100) pos = 100 - (pos-100);
+      statusEl.innerHTML = `Player ${current+1} rolled <strong>${value}</strong>.`;
+      positions[current] = pos;
+      if(jumps[pos]){
+        const target = jumps[pos];
+        statusEl.innerHTML += ` Landed on a ${target>pos ? 'ladder' : 'snake'}! Moving to ${target}.`;
+        positions[current] = target;
+      }
+      updateBoard();
+      if(positions[current] === 100){
+        statusEl.innerHTML = `🎉 Player ${current+1} wins!`;
+        playing = false;
+        diceEl.textContent = '-';
+        rollBtn.disabled = true;
+        return;
+      }
+      if(value === 6){
+        statusEl.innerHTML += ` Rolled a 6 — Player ${current+1} goes again.`;
+        rollBtn.disabled = false;
+        if(robots.includes(current) && playing){ setTimeout(()=>rollDice(), 600); }
+        return;
+      }
+      current = (current+1) % positions.length;
+      statusEl.innerHTML += ` Now it's Player ${current+1}'s turn.`;
+      rollBtn.disabled = false;
+      if(robots.includes(current) && playing){ setTimeout(()=>rollDice(), 700); }
+    }
+
+    rollBtn.addEventListener('click',()=>{ rollDice(); });
+
+    resetBtn.addEventListener('click',()=>{ startGame(); });
+
+    startBtn.addEventListener('click',()=>{ startGame(); });
+
+    function startGame(){
+      const numPlayers = parseInt(numPlayersEl.value,10);
+      const numRobots = Math.min(parseInt(numRobotsEl.value,10), numPlayers-1);
+      positions = new Array(numPlayers).fill(1);
+      current = 0;
+      playing = true;
+      robots = Array.from({length:numRobots}, (_,i)=>numPlayers-i-1); // assign last slots as AI
+      diceEl.textContent = '-';
+      statusEl.innerHTML = `Player 1's turn. Click <strong>Roll</strong> to start.`;
+      rollBtn.disabled = false;
+      resetBtn.disabled = false;
+
+      playersEl.innerHTML = '';
+      for(let i=0;i<numPlayers;i++){
+        const div = document.createElement('div');
+        div.className = 'player';
+        const token = document.createElement('span');
+        token.className = 'token';
+        token.style.background = colors[i%colors.length];
+        div.appendChild(token);
+        div.appendChild(document.createTextNode(`Player ${i+1}${robots.includes(i)?' (AI)':''}`));
+        playersEl.appendChild(div);
+      }
+      updateBoard();
+    }
+
+    updateBoard();
+  </script>
+</body>
+</html>

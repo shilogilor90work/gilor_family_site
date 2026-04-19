@@ -10,8 +10,8 @@ const paddleWidth = 10;
 const paddleHeight = 100;
 const ballRadius = 7;
 const winningScore = 5;
-let ballSpeedX = 5;
-let ballSpeedY = 5;
+let ballSpeedX = 10;
+let ballSpeedY = 10;
 let gameRunning = true;
 
 // Player objects

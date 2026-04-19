@@ -94,3 +94,18 @@ class game_links(models.Model):
 
     def __str__(self):
         return self.game_name
+
+class aramaic_words(models.Model):
+    id = models.AutoField(primary_key=True)
+    aramaic_word = models.CharField(max_length=255)
+    hebrew_translation = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.aramaic_word
+
+class hebrew_words(models.Model):
+    id = models.AutoField(primary_key=True)
+    hebrew_word = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.hebrew_word

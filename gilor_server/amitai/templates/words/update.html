@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Update Word</title>
+</head>
+<body>
+
+<h2>Update Word</h2>
+
+<form method="POST">
+    {% csrf_token %}
+    <input name="aramaic" value="{{ word.aramaic_word }}">
+    <input name="hebrew" value="{{ word.hebrew_translation }}">
+    <button>Save</button>
+</form>
+
+</body>
+</html>
